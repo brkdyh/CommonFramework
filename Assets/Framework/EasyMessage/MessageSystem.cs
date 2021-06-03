@@ -25,7 +25,7 @@ namespace MessageSystem
 
         public static void InitSetting()
         {
-            var setting = Resources.Load<MessageSettingObject>("Message System Setting");
+            var setting = Resources.Load<MessageSettingObject>("MessageSetting");
             if (setting != null)
             {
                 //Debug.Log("Load Setting");

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: Message System Setting
-  m_EditorClassIdentifier: Assembly-CSharp:MessageSystem:MessageSettingObject
+  m_Script: {fileID: 11500000, guid: 32f821a10cdf3448b9c957fa878eb8ea, type: 3}
+  m_Name: MessageSetting
+  m_EditorClassIdentifier: 
   SysWorkMode: 1
   DebugMode: 1
   OpenLog: 0
