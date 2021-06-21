@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace MessageSystem
@@ -36,12 +37,37 @@ namespace MessageSystem
         }
     }
 
+    /// <summary>
+    /// 消息处理委托
+    /// </summary>
+    /// <param name="message_params"></param>
     public delegate void MessageHandleMethod(params object[] message_params);
 
-    public interface IMessageSystemHandler
+    /// <summary>
+    /// 消息过滤委托
+    /// </summary>
+    /// <param name="mark">过滤参数</param>
+    /// <returns>是否触发</returns>
+    public delegate bool MessageFilterMethod(string msg_uid, object mark);
+
+    public interface IBaseMessageHandler { }
+
+    /// <summary>
+    /// 消息处理接口
+    /// </summary>
+    public interface IMessageHandler : IBaseMessageHandler
     {
         string getMessageUid { get; }
         void initHandleMethodMap(Dictionary<string, MessageHandleMethod> HandleMethodMap);
+    }
+
+    /// <summary>
+    /// 多重消息处理接口
+    /// </summary>
+    public interface IMultiMessageHandler : IBaseMessageHandler
+    {
+        void initMessageUids(List<string> MessageUids);
+        void initHandleMethodMap(Dictionary<string, Dictionary<string, MessageHandleMethod>> HandleMethodMap);
     }
 
     /// <summary>
@@ -66,8 +92,6 @@ namespace MessageSystem
             if (string.IsNullOrEmpty(_senderString))
             {
                 _senderString = string.Format("{0}:{1}[", Sender_Type, Sender_Mothod);
-                //Debug.Log(_senderString);
-                //Debug.Log(Sender_Params.Length);
                 if (Sender_Params == null
                     || Sender_Params.Length == 0)
                     _senderString += "null";
@@ -76,41 +100,15 @@ namespace MessageSystem
                     foreach (var p in Sender_Params)
                         _senderString += (p + ",");
                 }
-                //Debug.Log(_senderString);
                 var rm_index = _senderString.LastIndexOf(',');
                 _senderString = (rm_index > -1 ? _senderString.Remove(rm_index) : _senderString) + "]";
             }
             return _senderString;
         }
-
-        //string _handleString;
-        //public string getHandleString()
-        //{
-        //    if (string.IsNullOrEmpty(_senderString))
-        //    {
-
-        //    }
-
-        //    return _handleString;
-        //}
     }
 
-    public class MessageHandler
+    public abstract class BaseMessageHandler
     {
-        public IMessageSystemHandler IHdnaler;
-        public Dictionary<string, MessageHandleMethod> HandleMethodMap;
-
-        public int registerObjectHash { get { return IHdnaler.GetHashCode(); } }
-        public string messageUid { get { return IHdnaler.getMessageUid; } }
-
-        public MessageHandler(IMessageSystemHandler IHdnaler)
-        {
-            this.IHdnaler = IHdnaler;
-            HandleMethodMap = new Dictionary<string, MessageHandleMethod>();
-            IHdnaler.initHandleMethodMap(HandleMethodMap);
-        }
-
-
         public Stack<MessageCallInfo> callStack = new Stack<MessageCallInfo>();
         public void RecordCallInfo(long send_timeStamp, string sender_info, object[] params_info, long handle_timeStamp, string handle_method)
         {
@@ -139,19 +137,49 @@ namespace MessageSystem
         }
     }
 
+    /// <summary>
+    /// 消息处理器
+    /// </summary>
+    public class MessageHandler: BaseMessageHandler
+    {
+        public IBaseMessageHandler IHdnaler;
+        public Dictionary<string, MessageHandleMethod> HandleMethodMap;
+
+        public int registerObjectHash { get { return IHdnaler.GetHashCode(); } }
+        public string messageUid { get; private set; }
+
+        public bool hasFilter { get { return filterMethod != null; } }
+        public MessageFilterMethod filterMethod;
+
+        public MessageHandler(IBaseMessageHandler IHdnaler, string messageUid,
+            Dictionary<string, MessageHandleMethod> HandleMethodMap, MessageFilterMethod filterMethod = null)
+        {
+            this.IHdnaler = IHdnaler;
+            this.messageUid = messageUid;
+            this.HandleMethodMap = HandleMethodMap;
+            this.filterMethod = filterMethod;
+        }
+    }
+
+    /// <summary>
+    /// 消息发送器
+    /// </summary>
     public struct MessageSender
     {
         public string message_uid;
         public string method_id;
+        public object filter_mark;
         public object[] message_params;
 
         public long send_timeStamp;
         public string sender_info;
 
-        public MessageSender(string message_uid, string method_id, object[] message_params)
+
+        public MessageSender(string message_uid, string method_id, object filter_mark, object[] message_params)
         {
             this.message_uid = message_uid;
             this.method_id = method_id;
+            this.filter_mark = filter_mark;
             this.message_params = message_params;
             send_timeStamp = DateTime.Now.ToBinary();
             sender_info = "Unknow Sender";
@@ -163,6 +191,9 @@ namespace MessageSystem
         }
     }
 
+    /// <summary>
+    /// 消息内核
+    /// </summary>
     public class MessageCore : MonoBehaviour
     {
         private static MessageCore _singleton = null;
@@ -198,22 +229,16 @@ namespace MessageSystem
         //消息队列，异步模式下使用
         Queue<MessageSender> messagesQueue = new Queue<MessageSender>();
 
-        void addHandler(IMessageSystemHandler interface_handler)
+        void addMessage(string msg_uid)
         {
-            string msg_uid = interface_handler.getMessageUid;
             if (!messageHandlersMap.ContainsKey(msg_uid))
             {
                 messageHandlersMap.Add(msg_uid, new Dictionary<int, MessageHandler>());
             }
+        }
 
-            var handlerDic = messageHandlersMap[msg_uid];
-            var handler_hash = interface_handler.GetHashCode();
-            if (!handlerDic.ContainsKey(handler_hash))
-            {
-                MessageHandler handler = new MessageHandler(interface_handler);
-                handlerDic.Add(handler_hash, handler);
-            }
-
+        void addDebug(IBaseMessageHandler interface_handler, MessageHandler handler)
+        {
 #if UNITY_EDITOR
             if (MessageSetting.DebugMode)
             {//开启调试
@@ -223,7 +248,7 @@ namespace MessageSystem
                     var debugger = gameObject.GetComponent<MessageSystemHandlerDebugger>();
                     if (debugger == null)
                         debugger = gameObject.AddComponent<MessageSystemHandlerDebugger>();
-                    debugger.AddHandler(interface_handler);
+                    debugger.AddHandler(handler);
                     debugger.hideFlags = HideFlags.DontSave;
                     //debugger.hideFlags = HideFlags.HideInInspector;
                 }
@@ -231,7 +256,52 @@ namespace MessageSystem
 #endif
         }
 
-        void MarkHandlerDispose(IMessageSystemHandler interface_handler)
+        void addHandler(IMessageHandler interface_handler, MessageFilterMethod messageFilter = null)
+        {
+            string msg_uid = interface_handler.getMessageUid;
+            addMessage(msg_uid);
+
+            var handlerDic = messageHandlersMap[msg_uid];
+            var handler_hash = interface_handler.GetHashCode();
+            if (!handlerDic.ContainsKey(handler_hash))
+            {
+                Dictionary<string, MessageHandleMethod> methodsMap = new Dictionary<string, MessageHandleMethod>();
+                interface_handler.initHandleMethodMap(methodsMap);
+                MessageHandler handler = new MessageHandler(interface_handler, interface_handler.getMessageUid, methodsMap, messageFilter);
+                handlerDic.Add(handler_hash, handler);
+            }
+
+            addDebug(interface_handler, handlerDic[handler_hash]);
+        }
+
+        void addHandler(IMultiMessageHandler interface_handler, MessageFilterMethod messageFilter = null)
+        {
+            List<string> msg_uids = new List<string>();
+            interface_handler.initMessageUids(msg_uids);
+
+            Dictionary<string, Dictionary<string, MessageHandleMethod>> msg_methods_map = new Dictionary<string, Dictionary<string, MessageHandleMethod>>();
+            foreach (var msg_id in msg_uids)
+                msg_methods_map.Add(msg_id, new Dictionary<string, MessageHandleMethod>());
+
+            interface_handler.initHandleMethodMap(msg_methods_map);
+
+            foreach (var msg_uid in msg_uids)
+            {
+                addMessage(msg_uid);
+
+                var handlerDic = messageHandlersMap[msg_uid];
+                var handler_hash = interface_handler.GetHashCode();
+                if (!handlerDic.ContainsKey(handler_hash))
+                {
+                    MessageHandler handler = new MessageHandler(interface_handler, msg_uid, msg_methods_map[msg_uid], messageFilter);
+                    handlerDic.Add(handler_hash, handler);
+                }
+
+                addDebug(interface_handler, handlerDic[handler_hash]);
+            }
+        }
+
+        void MarkHandlerDispose(IMessageHandler interface_handler)
         {
             lock (removeHandlers)
             {
@@ -239,7 +309,20 @@ namespace MessageSystem
             }
         }
 
-        void removeHandler(string msg_uid,int handler_hash)
+        void MarkHandlerDispose(IMultiMessageHandler interface_handler)
+        {
+            lock (removeHandlers)
+            {
+                List<string> rm_msg_uids = new List<string>();
+                interface_handler.initMessageUids(rm_msg_uids);
+                foreach(var msg_uid in rm_msg_uids)
+                {
+                    removeHandlers.Push(Handler2Identiry(msg_uid, interface_handler.GetHashCode()));
+                }
+            }
+        }
+
+        void removeHandler(string msg_uid, int handler_hash)
         {
             if (messageHandlersMap.ContainsKey(msg_uid))
             {
@@ -301,7 +384,15 @@ namespace MessageSystem
                     var handlerDic = messageHandlersMap[msg.message_uid];
                     foreach (var handler in handlerDic)
                     {
+                        if (msg.filter_mark != null)
+                        {//handler filter
+                            if (!handler.Value.hasFilter)
+                                continue;
+                            if (!handler.Value.filterMethod(msg.message_uid, msg.filter_mark))
+                                continue;
+                        }
                         current_handler = string.Format("{0}+[{1}]", handler.Value.IHdnaler.ToString(), handler.Key);
+
                         var methods = handler.Value.HandleMethodMap;
                         if (methods.ContainsKey(msg.method_id))
                         {
@@ -353,19 +444,29 @@ namespace MessageSystem
             }
         }
 
-        static string Handler2Identiry(IMessageSystemHandler handler)
+        static string Handler2Identiry(IMessageHandler handler)
         {
-            return handler.getMessageUid + "+" + handler.GetHashCode();
+            return Handler2Identiry(handler.getMessageUid, handler.GetHashCode());
         }
 
-#region Static Methods
-
-        public static void RegisterHandler(IMessageSystemHandler handler)
+        static string Handler2Identiry(string msg_uid,int hashCode)
         {
-            Instance.addHandler(handler);
+            return msg_uid + "+" + hashCode;
         }
 
-        public static void SendMessage(string msg_uid, string method_id, params object[] msg_params)
+        #region Static Methods
+
+        public static void RegisterHandler(IMessageHandler handler, MessageFilterMethod messageFilter = null)
+        {
+            Instance.addHandler(handler, messageFilter);
+        }
+
+        public static void RegisterHandler(IMultiMessageHandler handler, MessageFilterMethod messageFilter = null)
+        {
+            Instance.addHandler(handler, messageFilter);
+        }
+
+        public static void SendMessage(string msg_uid, string method_id,params object[] msg_params)
         {
 
 #if UNITY_EDITOR
@@ -373,7 +474,7 @@ namespace MessageSystem
                 return;
 
 #endif
-            MessageSender msgData = new MessageSender(msg_uid, method_id, msg_params);
+            MessageSender msgData = new MessageSender(msg_uid, method_id, null, msg_params);
 
             if (MessageSetting.DebugMode)
             {//Debug模式下记录发送者信息
@@ -393,7 +494,44 @@ namespace MessageSystem
                 Instance.EnqueueMessage(msgData);
         }
 
-        public static void UnregisterHandler(IMessageSystemHandler handler)
+        public static void SendFilterMessage(string msg_uid, string method_id, object filter_mark, params object[] msg_params)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+#endif
+            MessageSender msgData = new MessageSender(msg_uid, method_id, filter_mark, msg_params);
+
+            if (MessageSetting.DebugMode)
+            {//Debug模式下记录发送者信息
+                string sender_info = "";
+                var frames = StackTraceUtility.ExtractStackTrace().Split('\n');
+                if (frames.Length > 1)
+                    sender_info = (frames[1]);
+                else
+                    sender_info = (frames[0]);
+
+                msgData.RecordSender(sender_info);  //记录发送者
+            }
+
+            if (MessageSetting.SysWorkMode == MessageSetting.WorkMode.Synchronized)
+                Instance.handleMessage(msgData);
+            else
+                Instance.EnqueueMessage(msgData);
+        }
+
+        public static void UnregisterHandler(IMessageHandler handler)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+#endif
+            Instance.MarkHandlerDispose(handler);
+        }
+
+        public static void UnregisterHandler(IMultiMessageHandler handler)
         {
 #if UNITY_EDITOR
             if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
@@ -424,7 +562,7 @@ namespace MessageSystem
 
 public static class MessageSystemEditorHelper
 {
-    public static GameObject FindHandlerGameObject(MessageSystem.IMessageSystemHandler handler)
+    public static GameObject FindHandlerGameObject(MessageSystem.IBaseMessageHandler handler)
     {
         var objs = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
         foreach (var obj in objs)

@@ -63,7 +63,7 @@ namespace MessageSystem
     public class MessageCoreEditor : Editor
     {
         static Dictionary<string, bool> msg_toogle = new Dictionary<string, bool>();
-        static Dictionary<int, bool> hash_toogle = new Dictionary<int, bool>();
+        static Dictionary<string, bool> hash_toogle = new Dictionary<string, bool>();
 
         static Vector2 scrollPos;
 
@@ -104,8 +104,9 @@ namespace MessageSystem
                     int counter = 0;
                     foreach (var hd in hder)
                     {
-                        if (!hash_toogle.ContainsKey(hd.Key))
-                            hash_toogle.Add(hd.Key, false);
+                        var hash_toogle_str = hd.Key + "+" + hd.Value.messageUid;
+                        if (!hash_toogle.ContainsKey(hash_toogle_str))
+                            hash_toogle.Add(hash_toogle_str, false);
                         //GUILayout.BeginHorizontal();
                         GUILayout.Space(5);
 
@@ -131,15 +132,15 @@ namespace MessageSystem
                         //GUILayout.FlexibleSpace();
 
                         GUI.contentColor = ColorDefine.white;
-                        hash_toogle[hd.Key] = GUILayout.Toggle(hash_toogle[hd.Key], "Handler " + counter + " => " + hd.Value.IHdnaler.ToString() + "    Hash : " + hd.Key.ToString(),
-                            hash_toogle[hd.Key] ? "ToolbarPopup" : "ToolbarDropDown");
+                        hash_toogle[hash_toogle_str] = GUILayout.Toggle(hash_toogle[hash_toogle_str], "Handler " + counter + " => " + hd.Value.IHdnaler.ToString() + "    Hash : " + hd.Key.ToString(),
+                            hash_toogle[hash_toogle_str] ? "ToolbarPopup" : "ToolbarDropDown");
                         GUI.contentColor = raw_color;
 
                         GUILayout.FlexibleSpace();
 
                         GUILayout.EndHorizontal();
 
-                        if (hash_toogle[hd.Key])
+                        if (hash_toogle[hash_toogle_str])
                         {
                             GUILayout.Space(5);
                             GUILayout.BeginHorizontal();
@@ -188,9 +189,6 @@ namespace MessageSystem
         }
     }
 
-
-
-
     [CustomEditor(typeof(MessageSystemHandlerDebugger), true, isFallback = true)]
     public class IMessageSystemHandlerEditor : Editor
     {
@@ -213,7 +211,7 @@ namespace MessageSystem
         }
 
         Dictionary<string, bool> msg_toogle = new Dictionary<string, bool>();
-        Dictionary<int, HandlerControler> handlerControler = new Dictionary<int, HandlerControler>();
+        Dictionary<string, HandlerControler> handlerControler = new Dictionary<string, HandlerControler>();
 
         public override void OnInspectorGUI()
         {
@@ -251,14 +249,14 @@ namespace MessageSystem
             Repaint();
         }
 
-        void DrawHandlerArea(MessageSystemHandlerDebugger debugger, IMessageSystemHandler Ihandler, int index = 0)
+        void DrawHandlerArea(MessageSystemHandlerDebugger debugger, MessageHandler handler, int index = 0)
         {
             GUILayout.Space(5);
-            var handler = debugger.GetMessageHandler(Ihandler);
-            if (handler == null)
-                return;
+            //var handler = debugger.GetMessageHandler(Ihandler);
+            //if (handler == null)
+            //    return;
 
-            var hash = Ihandler.GetHashCode();
+            var hash = handler.registerObjectHash + "+" + handler.messageUid;
 
             if (!handlerControler.ContainsKey(hash))
             {
@@ -272,7 +270,7 @@ namespace MessageSystem
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             //GUI.color = ColorDefine.
-            curControler.handlerToogle = EditorGUILayout.Foldout(curControler.handlerToogle, "Handler " + index + " => " + Ihandler.ToString() + "  Hash : " + Ihandler.GetHashCode());
+            curControler.handlerToogle = EditorGUILayout.Foldout(curControler.handlerToogle, "Handler " + index + " => " + handler.IHdnaler.ToString() + "  Hash : " + handler.IHdnaler.GetHashCode());
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
 
