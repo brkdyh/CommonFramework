@@ -168,17 +168,27 @@ namespace MessageSystem
     {
         public string message_uid;
         public string method_id;
-        public object filter_mark;
+        public object[] filter_mark;
         public object[] message_params;
 
         public long send_timeStamp;
         public string sender_info;
 
+        //过滤模式
+        public enum FilterMode
+        {
+            DontFilter,
+            Include,
+            Except,
+        }
 
-        public MessageSender(string message_uid, string method_id, object filter_mark, object[] message_params)
+        public FilterMode filterMode;
+
+        public MessageSender(string message_uid, string method_id, FilterMode filterMode, object[] filter_mark, object[] message_params)
         {
             this.message_uid = message_uid;
             this.method_id = method_id;
+            this.filterMode = filterMode;
             this.filter_mark = filter_mark;
             this.message_params = message_params;
             send_timeStamp = DateTime.Now.ToBinary();
@@ -384,11 +394,24 @@ namespace MessageSystem
                     var handlerDic = messageHandlersMap[msg.message_uid];
                     foreach (var handler in handlerDic)
                     {
-                        if (msg.filter_mark != null)
+                        bool breakMark = false;
+                        if (msg.filterMode != MessageSender.FilterMode.DontFilter
+                            && msg.filter_mark != null)
                         {//handler filter
                             if (!handler.Value.hasFilter)
                                 continue;
-                            if (!handler.Value.filterMethod(msg.message_uid, msg.filter_mark))
+
+                            for (int i = 0; i < msg.filter_mark.Length; i++)
+                            {
+                                var mark = msg.filter_mark[i];
+                                if (handler.Value.filterMethod(msg.message_uid, mark))
+                                {
+                                    breakMark = !(msg.filterMode == MessageSender.FilterMode.Include);
+                                    break;
+                                }
+                            }
+
+                            if (breakMark)
                                 continue;
                         }
                         current_handler = string.Format("{0}+[{1}]", handler.Value.IHdnaler.ToString(), handler.Key);
@@ -474,7 +497,7 @@ namespace MessageSystem
                 return;
 
 #endif
-            MessageSender msgData = new MessageSender(msg_uid, method_id, null, msg_params);
+            MessageSender msgData = new MessageSender(msg_uid, method_id, MessageSender.FilterMode.DontFilter, null, msg_params);
 
             if (MessageSetting.DebugMode)
             {//Debug模式下记录发送者信息
@@ -494,15 +517,54 @@ namespace MessageSystem
                 Instance.EnqueueMessage(msgData);
         }
 
-        public static void SendFilterMessage(string msg_uid, string method_id, object filter_mark, params object[] msg_params)
+        /// <summary>
+        /// 发送消息，满足过滤条件的消息监听者将被触发。
+        /// </summary>
+        /// <param name="msg_uid">消息UID</param>
+        /// <param name="method_id">子ID</param>
+        /// <param name="filter_mark">过滤参数</param>
+        /// <param name="msg_params">消息参数</param>
+        public static void SendMessageInclude(string msg_uid, string method_id, object[] filter_mark, params object[] msg_params)
         {
 #if UNITY_EDITOR
             if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
 #endif
-            MessageSender msgData = new MessageSender(msg_uid, method_id, filter_mark, msg_params);
+            MessageSender msgData = new MessageSender(msg_uid, method_id, MessageSender.FilterMode.Include, filter_mark, msg_params);
+            if (MessageSetting.DebugMode)
+            {//Debug模式下记录发送者信息
+                string sender_info = "";
+                var frames = StackTraceUtility.ExtractStackTrace().Split('\n');
+                if (frames.Length > 1)
+                    sender_info = (frames[1]);
+                else
+                    sender_info = (frames[0]);
 
+                msgData.RecordSender(sender_info);  //记录发送者
+            }
+
+            if (MessageSetting.SysWorkMode == MessageSetting.WorkMode.Synchronized)
+                Instance.handleMessage(msgData);
+            else
+                Instance.EnqueueMessage(msgData);
+        }
+
+        /// <summary>
+        /// 发送消息，满足过滤条件的消息监听者会被过滤。
+        /// </summary>
+        /// <param name="msg_uid">消息UID</param>
+        /// <param name="method_id">子ID</param>
+        /// <param name="filter_mark">过滤参数</param>
+        /// <param name="msg_params">消息参数</param>
+        public static void SendMessageExcept(string msg_uid, string method_id, object[] filter_mark, params object[] msg_params)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+#endif
+            MessageSender msgData = new MessageSender(msg_uid, method_id, MessageSender.FilterMode.Except, filter_mark, msg_params);
             if (MessageSetting.DebugMode)
             {//Debug模式下记录发送者信息
                 string sender_info = "";

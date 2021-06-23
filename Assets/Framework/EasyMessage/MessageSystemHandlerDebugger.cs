@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using MessageSystem;
 using UnityEngine;
+using UnityEditor;
 
 public class MessageSystemHandlerDebugger : MonoBehaviour
 {

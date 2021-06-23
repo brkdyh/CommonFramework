@@ -36,7 +36,14 @@ public class Preson : MonoBehaviour, IMessageHandler
         Debug.Log(transform.name + thing);
     }
 
-    //实现的消息过滤器 --> 返回值为false时，该对象被过滤
+
+
+    /// <summary>
+    /// 消息过滤委托,用于判断该对象是否满足过滤条件
+    /// </summary>
+    /// <param name="msg_uid">待处理的消息UID</param>
+    /// <param name="mark">过滤参数</param>
+    /// <returns>返回为真时，根据过滤模式判断是否触发</returns>
     public bool getMessageFilter(string msg_uid, object mark)
     {
         if (msg_uid == "Person_Do_Something")

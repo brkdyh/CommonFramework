@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 298fe43a893f84d2c9bc0bde24296b5d, type: 3}
   m_Name: SaveDataConfig
   m_EditorClassIdentifier: 
-  isEnc: 1
-  AES_KSY: pqxhzwowzzvorlvt
+  isEnc: 0
+  AES_KSY: ivvlfgppzivrlwls
   SAVE_DATA_VERSION: 0.0.1
   USE_UNITY_VERSION: 0
-  GENERATED_KEY: []
+  GENERATED_KEY:
+  - pqxhzwowzzvorlvt
