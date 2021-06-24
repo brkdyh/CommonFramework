@@ -332,6 +332,14 @@ namespace MessageSystem
             }
         }
 
+        void MarkHandlerDispose(MessageHandler handler)
+        {
+            lock (removeHandlers)
+            {
+                removeHandlers.Push(Handler2Identiry(handler.messageUid, handler.registerObjectHash));
+            }
+        }
+
         void removeHandler(string msg_uid, int handler_hash)
         {
             if (messageHandlersMap.ContainsKey(msg_uid))
@@ -394,6 +402,12 @@ namespace MessageSystem
                     var handlerDic = messageHandlersMap[msg.message_uid];
                     foreach (var handler in handlerDic)
                     {
+                        if (handler.Value.IHdnaler.ToString() == "null")
+                        {
+                            MarkHandlerDispose(handler.Value);
+                            continue;
+                        }
+
                         bool breakMark = false;
                         if (msg.filterMode != MessageSender.FilterMode.DontFilter
                             && msg.filter_mark != null)
@@ -414,31 +428,34 @@ namespace MessageSystem
                             if (breakMark)
                                 continue;
                         }
-                        current_handler = string.Format("{0}+[{1}]", handler.Value.IHdnaler.ToString(), handler.Key);
 
+                        current_handler = string.Format("{0}+[{1}]", handler.Value.IHdnaler.ToString(), handler.Key);
                         var methods = handler.Value.HandleMethodMap;
                         if (methods.ContainsKey(msg.method_id))
                         {
                             var handle_mehtod = methods[msg.method_id];
-
-                            long handle_timeStamp = DateTime.Now.ToBinary();
-                            handle_mehtod(msg.message_params);
-
-                            if (MessageSetting.DebugMode)
+                            //Debug.Log(handle_mehtod);
+                            if (handle_mehtod != null)
                             {
-                                if (MessageSetting.SysWorkMode == MessageSetting.WorkMode.Synchronized)
-                                {//同步模式记录
-                                    handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, msg.send_timeStamp, handle_mehtod.Method.ToString());
-                                }
-                                else
-                                {//异步模式记录
-                                    handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, handle_timeStamp, handle_mehtod.Method.ToString());
-                                }
-                            }
+                                long handle_timeStamp = DateTime.Now.ToBinary();
+                                handle_mehtod(msg.message_params);
 
-                            Log(string.Format("<color=#00efef>MessageSystem =></color> Handle Message :current handler =  <color=#ef0000>{0}</color> ," +
-                                "msg uid = <color=#efef00>{1}</color>, method id = <color=#efef00>{2}</color>",
-                                current_handler, msg.message_uid, msg.method_id));
+                                if (MessageSetting.DebugMode)
+                                {
+                                    if (MessageSetting.SysWorkMode == MessageSetting.WorkMode.Synchronized)
+                                    {//同步模式记录
+                                        handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, msg.send_timeStamp, handle_mehtod.Method.ToString());
+                                    }
+                                    else
+                                    {//异步模式记录
+                                        handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, handle_timeStamp, handle_mehtod.Method.ToString());
+                                    }
+                                }
+
+                                Log(string.Format("<color=#00efef>MessageSystem =></color> Handle Message :current handler =  <color=#ef0000>{0}</color> ," +
+                                    "msg uid = <color=#efef00>{1}</color>, method id = <color=#efef00>{2}</color>",
+                                    current_handler, msg.message_uid, msg.method_id));
+                            }
                         }
                     }
                 }
