@@ -41,5 +41,11 @@ public class SampleSender : MonoBehaviour
         {
             MessageCore.SendMessageExcept("Person_Do_Something", "Move", new object[] { "班级1", "班级3" }, "C");
         }
+
+        if (GUILayout.Button("传送到A点"))
+        {
+            var pos = GameObject.Find("A").transform.position;
+            MessageCore.SendMessage("Superman_Do_Something", "Teleport", pos);
+        }
     }
 }

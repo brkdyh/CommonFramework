@@ -322,6 +322,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}
+--- !u!102 &508868553 stripped
+TextMesh:
+  m_CorrespondingSourceObject: {fileID: 560132052475702374, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6,
+    type: 3}
+  m_PrefabInstance: {fileID: 560132052512103343}
+  m_PrefabAsset: {fileID: 0}
+--- !u!102 &602742181 stripped
+TextMesh:
+  m_CorrespondingSourceObject: {fileID: 1414272546068794413, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6,
+    type: 3}
+  m_PrefabInstance: {fileID: 560132052512103343}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &898815393
 GameObject:
   m_ObjectHideFlags: 0
@@ -746,6 +758,28 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}
+--- !u!1 &1392766251 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 560132051186529924, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6,
+    type: 3}
+  m_PrefabInstance: {fileID: 560132052512103343}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1392766252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392766251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c040b5302fdd416c9dd1c09a89c8bb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  person_name: "\u5F20\u4E09"
+  class_name: "\u73ED\u7EA71"
+  name_textMesh: {fileID: 508868553}
+  class_textMesh: {fileID: 602742181}
 --- !u!1 &1658787980
 GameObject:
   m_ObjectHideFlags: 0
@@ -1416,5 +1450,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Person
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 560132051186529951, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}

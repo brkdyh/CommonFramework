@@ -4,7 +4,7 @@ using UnityEngine;
 using MessageSystem;
 using UnityEngine.AI;
 
-public class Preson : MonoBehaviour, IMessageHandler
+public class Person : MonoBehaviour, IMessageHandler
 {
     [Header("姓名")]
     public string person_name;
@@ -27,7 +27,7 @@ public class Preson : MonoBehaviour, IMessageHandler
     NavMeshAgent agent;
 
     Vector3 initPostion;
-    private void Start()
+    protected virtual void Start()
     {
         MessageCore.RegisterHandler(this, getMessageFilter);
         agent = GetComponent<NavMeshAgent>();
