@@ -415,6 +415,8 @@ namespace MessageSystem
                             if (!handler.Value.hasFilter)
                                 continue;
 
+                            breakMark = MessageSender.FilterMode.Include == msg.filterMode;
+
                             for (int i = 0; i < msg.filter_mark.Length; i++)
                             {
                                 var mark = msg.filter_mark[i];

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MessageSystem;
+using UnityEngine.AI;
 
 public class Preson : MonoBehaviour, IMessageHandler
 {
@@ -11,18 +12,28 @@ public class Preson : MonoBehaviour, IMessageHandler
     [Header("班级")]
     public string class_name;
 
+    public TextMesh name_textMesh;
+    public TextMesh class_textMesh;
     //注册的消息UID --> 只处理单一消息UID
     public string getMessageUid => "Person_Do_Something";
 
     //子ID<=>方法 映射集合
     public void initHandleMethodMap(Dictionary<string, MessageHandleMethod> HandleMethodMap)
     {
-        HandleMethodMap.Add("Do_Something", doSomething);
+        HandleMethodMap.Add("Move", move);
+        HandleMethodMap.Add("Reset", reset);
     }
 
+    NavMeshAgent agent;
+
+    Vector3 initPostion;
     private void Start()
     {
         MessageCore.RegisterHandler(this, getMessageFilter);
+        agent = GetComponent<NavMeshAgent>();
+        name_textMesh.text = person_name;
+        class_textMesh.text = class_name;
+        initPostion = transform.position;
     }
 
     private void OnDestroy()
@@ -30,12 +41,20 @@ public class Preson : MonoBehaviour, IMessageHandler
         MessageCore.UnregisterHandler(this);
     }
 
-    void doSomething(params object[] ps)
+    void move(params object[] ps)
     {
-        string thing = ps[0] as string;
-        Debug.Log(transform.name + thing);
+        string point_name = ps[0] as string;
+        var point = GameObject.Find(point_name);
+        agent.enabled = true;
+        agent.SetDestination(point.transform.position);
     }
 
+    void reset(params object[] ps)
+    {
+        agent.enabled = false;
+        transform.position = initPostion;
+        transform.localEulerAngles = Vector3.zero;
+    }
 
 
     /// <summary>
@@ -51,7 +70,9 @@ public class Preson : MonoBehaviour, IMessageHandler
             string str = mark as string;
 
             if (str == person_name || str == class_name)
+            {
                 return true;
+            }
         }
         return false;
     }

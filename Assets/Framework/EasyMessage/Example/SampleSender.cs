@@ -7,29 +7,39 @@ public class SampleSender : MonoBehaviour
 {
     private void OnGUI()
     {
-        if (GUILayout.Button("全体扫地"))
+        if (GUILayout.Button("复位"))
         {
-            MessageCore.SendMessage("Person_Do_Something", "Do_Something", "扫地");
+            MessageCore.SendMessage("Person_Do_Something", "Reset");
         }
 
-        if (GUILayout.Button("班级1 擦黑板"))
+        if (GUILayout.Button("所有人去A点"))
         {
-            MessageCore.SendMessageInclude("Person_Do_Something", "Do_Something", new object[] { "班级1" }, "擦黑板");
+            MessageCore.SendMessage("Person_Do_Something", "Move", "A");
         }
 
-        if (GUILayout.Button("李四 拖地"))
+        if (GUILayout.Button("班级1去B点"))
         {
-            MessageCore.SendMessageInclude("Person_Do_Something", "Do_Something", new object[] { "李四" }, "拖地");
+            MessageCore.SendMessageInclude("Person_Do_Something", "Move", new object[] { "班级1" }, "B");
         }
 
-        if (GUILayout.Button("除了李四和班级2 做作业"))
+        if (GUILayout.Button("张三去A点"))
         {
-            MessageCore.SendMessageExcept("Person_Do_Something", "Do_Something", new object[] { "李四", "班级2" }, "做作业");
+            MessageCore.SendMessageInclude("Person_Do_Something", "Move", new object[] { "张三" }, "A");
         }
 
-        if (GUILayout.Button("所有班级 放学"))
+        if (GUILayout.Button("除了张三去B点"))
         {
-            MessageCore.SendMessage("Class_Do_Something", "Do_Something", "放学");
+            MessageCore.SendMessageExcept("Person_Do_Something", "Move", new object[] { "张三" }, "B");
+        }
+
+        if (GUILayout.Button("班级1和班级3去C点"))
+        {
+            MessageCore.SendMessageInclude("Person_Do_Something", "Move", new object[] { "班级1", "班级3" }, "C");
+        }
+
+        if (GUILayout.Button("除了班级1和班级3去C点"))
+        {
+            MessageCore.SendMessageExcept("Person_Do_Something", "Move", new object[] { "班级1", "班级3" }, "C");
         }
     }
 }
