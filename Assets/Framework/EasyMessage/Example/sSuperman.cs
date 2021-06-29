@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MessageSystem;
 
-public class Superman : Person, IMultiMessageHandler
+public class sSuperman : sPerson, IMultiMessageHandler
 {
     public void initMessageUids(List<string> MessageUids)
     {

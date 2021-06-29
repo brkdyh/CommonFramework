@@ -4,7 +4,7 @@ using UnityEngine;
 using MessageSystem;
 using UnityEngine.AI;
 
-public class Person : MonoBehaviour, IMessageHandler
+public class sPerson : MonoBehaviour, IMessageHandler
 {
     [Header("姓名")]
     public string person_name;
