@@ -539,7 +539,7 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>
             var backup_root = Application.persistentDataPath + BACKUPPATH;
 
             //再Rename备份存档
-            var files = Directory.GetFiles(backup_root, "*.json", SearchOption.AllDirectories);
+            var files = Directory.GetFiles(backup_root, "*.*", SearchOption.AllDirectories);
             foreach (var file in files)
             {
                 var new_file = file.Replace("/BackUp/", "/Save/");
