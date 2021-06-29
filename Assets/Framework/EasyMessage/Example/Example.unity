@@ -1450,6 +1450,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Person
       objectReference: {fileID: 0}
+    - target: {fileID: 1414272546068794413, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6,
+        type: 3}
+      propertyPath: m_Text
+      value: "\u73ED\u7EA7"
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 560132051186529951, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 2113c0a68f86c4ae0819e2e4f55a0ac6, type: 3}
