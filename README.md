@@ -161,11 +161,11 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>{
 
 ## 3.消息系统
 * 拷贝 *Assets/Framework/EasyMessage* 路径下的全部文件到 Unity 工程中。
+* 异步模式下，通过实现消息队列来保证消息的执行顺序。
 
 ### 3.1配置说明
 * 配置文件路径为 *../Save/Resources/SaveDataConfig.asset* ,如下图所示:
 ![配置文件](pic_311.png "消息配置文件")
-
 |配置属性|解释|
 |---|---|
 |Sys Work Mode|消息系统工作模式。可以配置为同步或**异步(推荐)**工作模式|
@@ -275,7 +275,7 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>{
 * ***FSM*** 有限状态机，详见上次[分享](https://yomobtech.feishu.cn/file/boxcnddbgXH7prqrZlM1Ma3qhYd "分享链接")。
 * ***Sequence*** 事件序列，详见上次[分享](https://yomobtech.feishu.cn/file/boxcnddbgXH7prqrZlM1Ma3qhYd "分享链接")。
 * 轻量化***UI***框架。
+* ***DebugConsole*** 真机运行时调试工具。 
 
 ## 5.公共框架工程地址
 [工程项目地址](https://github.com/brkdyh/CommonFramework.git)
-
