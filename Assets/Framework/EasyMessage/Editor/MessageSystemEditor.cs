@@ -213,6 +213,8 @@ namespace MessageSystem
         Dictionary<string, bool> msg_toogle = new Dictionary<string, bool>();
         Dictionary<string, HandlerControler> handlerControler = new Dictionary<string, HandlerControler>();
 
+        string log_filter = "";
+
         public override void OnInspectorGUI()
         {
             //base.OnInspectorGUI();
@@ -313,11 +315,18 @@ namespace MessageSystem
 
             //Draw Method Info
             GUILayout.BeginHorizontal();
-            GUILayout.Space(20); curControler.logToogle = EditorGUILayout.Foldout(curControler.logToogle, "Message Call Log");
+            GUILayout.Space(20); curControler.logToogle = EditorGUILayout.Foldout(curControler.logToogle, string.Format("Message Call Log ({0})", handler.callStack.Count));
+            //GUILayout.FlexibleSpace();
+            //GUILayout.Space(5); GUILayout.Label(string.Format("({0})", handler.callStack.Count));
             GUILayout.FlexibleSpace();
-            GUILayout.Space(5); GUILayout.Label(string.Format("({0})", handler.callStack.Count));
-            if (GUILayout.Button("Clear Log")) { handler.callStack.Clear(); }
+            if (GUILayout.Button("Clear Log")) { handler.ClearCallStack(); }
             GUILayout.Space(20);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+            log_filter = EditorGUILayout.TextField("Method ID Filter:", log_filter);
+            handler.SetFilter(log_filter);
             GUILayout.EndHorizontal();
 
             if (curControler.logToogle)
@@ -332,7 +341,7 @@ namespace MessageSystem
                 GUILayout.BeginVertical();
 
                 int ct = 0;
-                var callStack = handler.callStack.GetEnumerator();
+                var callStack = handler.filterCallStack.GetEnumerator();
                 while (callStack.MoveNext())
                 {
                     GUILayout.BeginVertical(ct % 2 == 0 ? "box" : "dockarea");

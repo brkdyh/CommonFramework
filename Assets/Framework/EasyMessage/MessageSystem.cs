@@ -75,6 +75,9 @@ namespace MessageSystem
     /// </summary>
     public struct MessageCallInfo
     {
+        public string Message_UID;
+        public string Method_ID;
+
         public long Send_timeStamp;
         public string Sender_Type;
         public string Sender_Mothod;
@@ -110,12 +113,15 @@ namespace MessageSystem
     public abstract class BaseMessageHandler
     {
         public Stack<MessageCallInfo> callStack = new Stack<MessageCallInfo>();
-        public void RecordCallInfo(long send_timeStamp, string sender_info, object[] params_info, long handle_timeStamp, string handle_method)
+        public void RecordCallInfo(string msg_id, string method_id, long send_timeStamp, string sender_info, object[] params_info, long handle_timeStamp, string handle_method)
         {
             if (!MessageSetting.DebugMode)
                 return;
 
             MessageCallInfo messageCall = new MessageCallInfo();
+
+            messageCall.Message_UID = msg_id;
+            messageCall.Method_ID = method_id;
 
             var sps = sender_info.Split(' ');
             var mps = sps[0].Split(':');
@@ -133,7 +139,75 @@ namespace MessageSystem
             }
 
             callStack.Push(messageCall);
+            if (fitFilter(messageCall))
+                filterCallStack.Push(messageCall);
             //Debug.Log(sender_info + "\n" + handler_info);
+        }
+
+        string stackfilter = "";
+        public Stack<MessageCallInfo> filterCallStack = new Stack<MessageCallInfo>();
+        public void SetFilter(string filter)
+        {
+            if (this.stackfilter == filter)
+                return;
+
+            this.stackfilter = filter;
+
+            if (string.IsNullOrEmpty(this.stackfilter))
+            {
+                filterCallStack = new Stack<MessageCallInfo>(callStack);
+                filterCallStack = RevertStack(filterCallStack);
+                return;
+            }
+
+            filterCallStack.Clear();
+
+            //var temp = new Stack<MessageCallInfo>();
+            var curStack = callStack.GetEnumerator();
+            while (curStack.MoveNext())
+            {
+                var info = curStack.Current;
+                if (fitFilter(info))
+                    filterCallStack.Push(info);
+            }
+
+            filterCallStack = RevertStack(filterCallStack);
+        }
+
+        Stack<MessageCallInfo> RevertStack(Stack<MessageCallInfo> raw)
+        {
+            var temp = new Stack<MessageCallInfo>(raw);
+            return temp;
+        }
+
+        bool fitFilter(MessageCallInfo info)
+        {
+            if (string.IsNullOrEmpty(stackfilter))
+                return true;
+
+            bool res = false;
+            var fs = stackfilter.Split(';');
+            foreach (var f in fs)
+            {
+                var nf = f.Trim();
+                if (string.IsNullOrEmpty(nf))
+                    continue;
+                if (nf[0] == '!')
+                    res = ("!" + info.Method_ID) != nf;
+                else
+                    res = info.Method_ID == nf;
+
+                if (res)
+                    return true;
+            }
+
+            return res;
+        }
+
+        public void ClearCallStack()
+        {
+            callStack.Clear();
+            filterCallStack.Clear();
         }
     }
 
@@ -446,11 +520,15 @@ namespace MessageSystem
                                 {
                                     if (MessageSetting.SysWorkMode == MessageSetting.WorkMode.Synchronized)
                                     {//同步模式记录
-                                        handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, msg.send_timeStamp, handle_mehtod.Method.ToString());
+                                        handler.Value.RecordCallInfo(msg.message_uid,msg.method_id,
+                                            msg.send_timeStamp, msg.sender_info, msg.message_params,
+                                            msg.send_timeStamp, handle_mehtod.Method.ToString());
                                     }
                                     else
                                     {//异步模式记录
-                                        handler.Value.RecordCallInfo(msg.send_timeStamp, msg.sender_info, msg.message_params, handle_timeStamp, handle_mehtod.Method.ToString());
+                                        handler.Value.RecordCallInfo(msg.message_uid, msg.method_id,
+                                            msg.send_timeStamp, msg.sender_info, msg.message_params,
+                                            handle_timeStamp, handle_mehtod.Method.ToString());
                                     }
                                 }
 
