@@ -166,6 +166,7 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>{
 ### 3.1配置说明
 * 配置文件路径为 *../Save/Resources/SaveDataConfig.asset* ,如下图所示:
 ![配置文件](pic_311.png "消息配置文件")
+
 |配置属性|解释|
 |---|---|
 |Sys Work Mode|消息系统工作模式。可以配置为同步或**异步(推荐)**工作模式|
