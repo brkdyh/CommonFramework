@@ -16,6 +16,8 @@ namespace EasyAsset
 
         public string filter;
 
+        #region Page Control
+
         public int perPageCount = 50;
         public Dictionary<string, int> pageIndex = new Dictionary<string, int>();
         public Dictionary<string, int> itemCount = new Dictionary<string, int>();
@@ -72,6 +74,8 @@ namespace EasyAsset
 
             return -1;
         }
+
+        #endregion
 
         public virtual void onGUI()
         {
@@ -172,14 +176,28 @@ namespace EasyAsset
 
         public bool inAnalysing { get; protected set; } = false;
         public float analysingProgress { get; protected set; } = 0f;
-        public virtual void Analysis(string[] paths)
+
+        protected string[] analysis_ignores;
+        public virtual void Analysis(string[] paths, string[] ignores)
         {
             if (inAnalysing)
                 return;
 
             inAnalysing = true;
 
+            analysis_ignores = ignores;
             AssetAnalysis.instance.StartCoroutine(StartAnalysis(paths));
+        }
+
+        protected bool IgnorePath(string path)
+        {
+            foreach (var ignore in analysis_ignores)
+            {
+                if (path.Contains(ignore))
+                    return true;
+            }
+
+            return false;
         }
 
         int frameBatchCount = 20;
@@ -397,8 +415,7 @@ namespace EasyAsset
 
         protected override void AnalysisPath(string p)
         {
-            if (p.Contains("DS_Store")
-                  || p.Contains(".meta"))
+            if(IgnorePath(p))
                 return;
 
             string path = p.Replace(Application.dataPath + "/", "Assets/");
@@ -408,7 +425,8 @@ namespace EasyAsset
             string[] dps = AssetDatabase.GetDependencies(dp.assetData.assetPath);
             foreach (var adp in dps)
             {
-                dp.AddDependencyCount(adp);
+                if (!IgnorePath(adp))
+                    dp.AddDependencyCount(adp);
             }
         }
     }
@@ -591,8 +609,7 @@ namespace EasyAsset
 
         protected override void AnalysisPath(string p)
         {
-            if (p.Contains("DS_Store")
-                  || p.Contains(".meta"))
+            if (IgnorePath(p))
                 return;
 
             string path = p.Replace(Application.dataPath + "/", "Assets/");
@@ -602,8 +619,11 @@ namespace EasyAsset
             string[] dps = AssetDatabase.GetDependencies(dp.assetData.assetPath);
             foreach (var adp in dps)
             {
-                var apply_asset = FindAnalysisData(adp);
-                apply_asset.AddApplyCount(dp.assetData.assetPath);
+                if (!IgnorePath(adp))
+                {
+                    var apply_asset = FindAnalysisData(adp);
+                    apply_asset.AddApplyCount(dp.assetData.assetPath);
+                }
             }
         }
     }

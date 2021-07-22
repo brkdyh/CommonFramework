@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 960384465
+CRC: 1883236118
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 17fba94bf62f31350eb5b97d70595e6d
+    Hash: b69a56a5f6efab9dbf7ab04d1487fdaf
   TypeTreeHash:
     serializedVersion: 2
     Hash: c23e721769fb47468a67df9c4012d813
@@ -30,5 +30,5 @@ ClassTypes:
 Assets:
 - Assets/Framework/EasyAssets/Resources/mat.mat
 - Assets/Framework/EasyAssets/Resources/Cube.prefab
-- Assets/Framework/EasyAssets/Resources/tex.png
-Dependencies: []
+Dependencies:
+- /Users/dongyh/github/CommonFramework/AssetsBundles/iOS/tb

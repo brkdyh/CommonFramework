@@ -83,6 +83,9 @@ namespace EasyAsset
         }
     }
 
+    /// <summary>
+    /// 资源包
+    /// </summary>
     public class EasyBundle
     {
         public string bundleName
@@ -97,6 +100,10 @@ namespace EasyAsset
         public AssetBundle getBundle() { return bundle; }
 
         private Dictionary<int, object> references = new Dictionary<int, object>();
+        public IEnumerator GetReferences()
+        {
+            return references.Values.GetEnumerator();
+        }
 
         public EasyBundle(AssetBundle bundle)
         {
@@ -105,13 +112,61 @@ namespace EasyAsset
 
         public void AddRefrence(object refrence)
         {
+            if (refrence == null)
+                return;
+
             if (refrence.GetType().IsValueType)
             {
                 Debug.LogWarning("不能添加值类型的引用");
                 return;
             }
 
-            references.Add(refrence.GetHashCode(), refrence);
+            var hash = refrence.GetHashCode();
+            if (!references.ContainsKey(hash))
+                references.Add(hash, refrence);
+        }
+    }
+
+    /// <summary>
+    /// Bundle加载轨迹
+    /// </summary>
+    public class BundleLoadTrack
+    {
+        public int assetHash;
+        public string[] bundles;
+
+        int _curindex = 0;
+
+        public BundleLoadTrack(int bundleCount)
+        {
+            bundles = new string[bundleCount];
+            _curindex = 0;
+        }
+
+        public void AddBundle(string bundleName)
+        {
+            if (_curindex < bundles.Length)
+            {
+                bundles[_curindex] = bundleName;
+                _curindex++;
+            }
+        }
+
+        public void SetHash(int assetHash)
+        {
+            this.assetHash = assetHash;
+        }
+    }
+
+    /// <summary>
+    /// Bundle包含的资源Hash值，用于卸载Bundle时，快速查询并移除加载轨迹
+    /// </summary>
+    public class BundleAssetsHash
+    {
+        public List<int> assetHashList = new List<int>();
+        public void AddAsset(int hash)
+        {
+            assetHashList.Add(hash);
         }
     }
 }
@@ -125,7 +180,34 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     AssetBundleManifest manifest = null;
 
+    //已加载的bundle
     Dictionary<string, EasyBundle> loadedBundles = new Dictionary<string, EasyBundle>();
+
+    //已加载的外部资源
+    Dictionary<string, UnityEngine.Object> externalAssets = new Dictionary<string, UnityEngine.Object>();
+
+    //bundle加载轨迹
+    Dictionary<int, BundleLoadTrack> bundleLoadTracks = new Dictionary<int, BundleLoadTrack>();
+    public BundleLoadTrack FindTrack(int hash)
+    {
+        if (bundleLoadTracks.ContainsKey(hash))
+            return bundleLoadTracks[hash];
+        return null;
+    }
+
+    //bundle包含资源hash
+    Dictionary<string, BundleAssetsHash> bundleAssetHash = new Dictionary<string, BundleAssetsHash>();
+    public void RecordBundleAssetHash(string bundleName, int hash)
+    {
+        if (!bundleAssetHash.ContainsKey(bundleName))
+            bundleAssetHash.Add(bundleName, new BundleAssetsHash());
+        bundleAssetHash[bundleName].AddAsset(hash);
+    }
+
+    public IEnumerator GetLoadedBundles()
+    {
+        return loadedBundles.Values.GetEnumerator();
+    }
 
     public override void Awake()
     {
@@ -147,40 +229,115 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         return true;
     }
 
+    /// <summary>
+    /// 记录资源的引用
+    /// </summary>
+    /// <param name="asset"></param>
+    /// <param name="refrence"></param>
+    public static void TrackingAsset(UnityEngine.Object asset, object refrence)
+    {
+        var hash = asset.GetHashCode();
+
+        var tracks = Instance.FindTrack(hash);
+        if (tracks != null)
+        {
+            //记录引用
+            foreach (var bundleName in tracks.bundles)
+            {
+                var track_bundle = Instance.FindBundle(bundleName);
+                if (track_bundle != null)
+                {
+                    track_bundle.AddRefrence(refrence);
+                    Instance.RecordBundleAssetHash(bundleName, hash);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 同步加载GameObject
+    /// </summary>
+    /// <param name="assetPath">资源路径</param>
+    /// <param name="parent"></param>
+    /// <returns></returns>
+    public static GameObject LoadGameobject(string assetPath, Transform parent = null)
+    {
+        UnityEngine.Object temp = Instance.LoadAsset_Internal<GameObject>(assetPath);
+
+        if (temp == null)
+            return null;
+        GameObject go = Instantiate(temp, parent) as GameObject;
+        TrackingAsset(temp, go);
+        return go;
+    }
+
+    /// <summary>
+    /// 同步加载资源
+    /// </summary>
+    /// <typeparam name="T">资源类型</typeparam>
+    /// <param name="assetPath">资源路径</param>
+    /// <param name="referenceObject">引用对象</param>
+    /// <returns></returns>
     public static T LoadAsset<T>(string assetPath, object referenceObject)
         where T : UnityEngine.Object
     {
-        return Instance.LoadAsset_Internal<T>(assetPath, referenceObject);
+        var asset = Instance.LoadAsset_Internal<T>(assetPath);
+        TrackingAsset(asset, referenceObject);
+        return asset;
     }
 
-    //同步加载资源
-    T LoadAsset_Internal<T>(string assetPath, object referenceObject)
+    //同步加载资源，记录加载轨迹
+    T LoadAsset_Internal<T>(string assetPath)
         where T : UnityEngine.Object
     {
         var bundleName = externalAssetList.GetBundleName(assetPath);
+        if (bundleName == "null")
+        {//如果是内部资源,直接使用Resources加载
+            return Resources.Load<T>(assetPath);
+        }
+
+        if (externalAssets.ContainsKey(assetPath))
+            return externalAssets[assetPath] as T;
+
         if (!loadedBundles.ContainsKey(bundleName))
             LoadBundle(bundleName);
 
         var direct_bundle = loadedBundles[bundleName];
         //加载依赖
         string[] dps = manifest.GetAllDependencies(direct_bundle.bundleName);
-        foreach (var dp in dps)
+
+        BundleLoadTrack track = new BundleLoadTrack(dps.Length + 1);
+        //tracks = new EasyBundle[dps.Length + 1];
+        for (int i = 0; i < dps.Length; i++)
         {
+            var dp = dps[i];
             var bd = LoadBundle(dp);
             if (bd == null)
             {
                 Debug.LogError("加载 " + assetPath + " 失败!" + "\n无法加载资源依赖包 => " + dp);
                 return null;
             }
-            bd.AddRefrence(referenceObject);
+            track.AddBundle(bd.bundleName);
         }
 
-        direct_bundle.AddRefrence(referenceObject);
+        track.AddBundle(direct_bundle.bundleName);
         T asset = direct_bundle.getBundle().LoadAsset<T>(assetPath);
+        track.SetHash(asset.GetHashCode());
+        bundleLoadTracks.Add(track.assetHash, track);   //添加记录
+
+        externalAssets.Add(assetPath, asset);           //缓存外部资源 
         return asset;
     }
 
+    //查找bundle
+    public EasyBundle FindBundle(string bundleName)
+    {
+        if (loadedBundles.ContainsKey(bundleName))
+            return loadedBundles[bundleName];
+        return null;
+    }
 
+    //加载Bundle
     EasyBundle LoadBundle(string bundleName)
     {
         if (!loadedBundles.ContainsKey(bundleName))

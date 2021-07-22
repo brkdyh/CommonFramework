@@ -1,7 +1,11 @@
 ManifestFileVersion: 0
-CRC: 758049323
+CRC: 26007367
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: ta
+      Dependencies:
+        Dependency_0: tb
+    Info_1:
+      Name: tb
       Dependencies: {}
