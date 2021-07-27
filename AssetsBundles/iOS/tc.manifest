@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 3663154338
+CRC: 4180892082
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: b69a56a5f6efab9dbf7ab04d1487fdaf
+    Hash: 75a18279ba262eaddabfea219a973e30
   TypeTreeHash:
     serializedVersion: 2
-    Hash: c23e721769fb47468a67df9c4012d813
+    Hash: a8d3d02d32e7a2b7037277cfb99be447
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -17,18 +17,13 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 23
   Script: {instanceID: 0}
-- Class: 28
-  Script: {instanceID: 0}
 - Class: 33
   Script: {instanceID: 0}
 - Class: 43
   Script: {instanceID: 0}
-- Class: 48
-  Script: {instanceID: 0}
-- Class: 65
+- Class: 135
   Script: {instanceID: 0}
 Assets:
-- Assets/Framework/EasyAssets/Example/Resources/mat.mat
-- Assets/Framework/EasyAssets/Example/Resources/Cube.prefab
+- Assets/Framework/EasyAssets/Example/Resources/Sphere.prefab
 Dependencies:
-- /Users/dongyh/github/CommonFramework/AssetsBundles/iOS/tb
+- /Users/dongyh/github/CommonFramework/AssetsBundles/iOS/ta

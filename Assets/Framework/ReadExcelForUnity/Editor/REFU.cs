@@ -125,7 +125,7 @@ namespace REFU
     {
 
         static REFU instance;
-        [MenuItem("REFU/Open Window")]
+        [MenuItem("Common Framework/REFU/Open Window",priority = 102)]
         public static void OpenWindow()
         {
             GetInstance();
@@ -401,6 +401,14 @@ namespace REFU
                 return;
             }
 
+            List<int> filter_lines = new List<int>();                   //过滤被注释的行
+            for (int pre_row = 1; pre_row <= sheet.Dimension.Rows; pre_row++)
+            {
+                object value = sheet.GetValue(pre_row, 1);
+                if (value.ToString().StartsWith("!"))
+                    filter_lines.Add(pre_row);
+            }
+
             for (int col = 1; col <= sheet.Dimension.Columns; col++)
             {
                 var field_name = fieldInfos[col - 1].FieldName;
@@ -420,10 +428,14 @@ namespace REFU
                 //{
                 //    Debug.LogError("Field Type Can't Map! " + sheet.Name + " : " + field_name + " " + field_type + " <=> " + get_field.FieldType);
                 //}
+
+                int index = 0;
                 var row_count = sheet.Dimension.Rows;
-                Array array = Array.CreateInstance(field_type, row_count - 2);
+                Array array = Array.CreateInstance(field_type, row_count - 2 - filter_lines.Count);
                 for (int row = 3; row <= row_count; row++)
                 {
+                    if (filter_lines.Contains(row))
+                        continue;
                     object value = sheet.GetValue(row, col);
                     try
                     {
@@ -434,7 +446,8 @@ namespace REFU
                         Debug.LogError("Convert Change Type Faild: " + ex.Message + "\n" + ex.StackTrace);
                         break;
                     }
-                    array.SetValue(value, row - 3);
+                    array.SetValue(value, index);
+                    index++;
                 }
 
                 get_field.SetValue(data, array);
@@ -442,6 +455,9 @@ namespace REFU
 
 
             var path = exportPath.Replace(Application.dataPath, "Assets/");
+            if (File.Exists(path))
+                File.Delete(path);
+
             AssetDatabase.CreateAsset(data, path + "/" + sheet.Name + ".asset");
         }
 

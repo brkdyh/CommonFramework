@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 1041822815
+CRC: 959568703
 Hashes:
   AssetFileHash:
     serializedVersion: 2
@@ -12,5 +12,5 @@ ClassTypes:
 - Class: 28
   Script: {instanceID: 0}
 Assets:
-- Assets/Framework/EasyAssets/Resources/tex.png
+- Assets/Framework/EasyAssets/Example/Resources/tex.png
 Dependencies: []

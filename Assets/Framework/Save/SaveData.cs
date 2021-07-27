@@ -559,7 +559,7 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>
     #endregion
 
 #if UNITY_EDITOR
-    [MenuItem("Tools/Save/Clear SaveData", priority = 101)]
+    [MenuItem("Common Framework/Save/Clear SaveData", priority = 101)]
     public static void ClearSaveJsonData()
     {
         if (Directory.Exists(Application.persistentDataPath + SAVEPATH))
@@ -569,7 +569,7 @@ public class SaveDataMgr : MonoSingleton<SaveDataMgr>
             Directory.Delete(Application.persistentDataPath + BACKUPPATH, true);
     }
 
-    [MenuItem("Tools/Save/Open Save Path", priority = 100)]
+    [MenuItem("Common Framework/Save/Open Save Path", priority = 100)]
     public static void OpenSaveDataPath()
     {
         if (!Directory.Exists(Application.persistentDataPath + "/Save"))

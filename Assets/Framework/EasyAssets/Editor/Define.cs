@@ -15,37 +15,28 @@ namespace EasyAsset
         static string editorPath;
         static string editorGUIPath;
 
-        //public static Texture textureScene, texturePrefab, textureAsset, texturePicture;
-        public static Texture textureOther;
-
-
-        static Dictionary<AssetData.AssetType, Texture> assetIcons = new Dictionary<AssetData.AssetType, Texture>();
-        public static Texture GetAssetTexture(AssetData.AssetType assetType)
+        public static void Inided()
         {
-            if (assetIcons.ContainsKey(assetType))
-                return assetIcons[assetType];
-            return textureOther;
+            if (inited)
+                return;
+
+            inited = true;
+
+            DirectoryInfo rootDir = new DirectoryInfo(Application.dataPath);
+            FileInfo[] files = rootDir.GetFiles("AssetMaintainer.cs", SearchOption.AllDirectories);
+            editorPath = Path.GetDirectoryName(files[0].FullName.Replace("\\", "/").Replace(Application.dataPath, "Assets"));
+            editorGUIPath = editorPath + "/GUI";
+
         }
 
-        //public static void Inided()
-        //{
-        //    //if (inited)
-        //        //return;
-
-        //    inited = true;
-
-        //    DirectoryInfo rootDir = new DirectoryInfo(Application.dataPath);
-        //    FileInfo[] files = rootDir.GetFiles("EasyAssetsEditor.cs", SearchOption.AllDirectories);
-        //    editorPath = Path.GetDirectoryName(files[0].FullName.Replace("\\", "/").Replace(Application.dataPath, "Assets"));
-        //    editorGUIPath = editorPath + "/GUI";
-
-        //    textureOther = AssetDatabase.LoadAssetAtPath<Texture2D>(editorGUIPath + "/icon-other.png");
-
-        //    assetIcons.Clear();
-        //    assetIcons.Add(AssetData.AssetType.Material, AssetDatabase.LoadAssetAtPath<Texture2D>(editorGUIPath + "/icon-mat.png"));
-        //    //assetIcons.Add(AssetData.AssetType.Other, AssetDatabase.LoadAssetAtPath<Texture2D>(editorGUIPath + "/icon-mat.png"));
-
-        //}
+        public static string EditorPath
+        {
+            get
+            {
+                Inided();
+                return editorPath;
+            }
+        }
     }
 
     /// <summary>

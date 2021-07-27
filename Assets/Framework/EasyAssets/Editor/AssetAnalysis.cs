@@ -13,6 +13,8 @@ namespace EasyAsset
     public class AssetAnalysis : EditorWindow
     {
         public static AssetAnalysis instance { get; private set; }
+
+        [MenuItem("Common Framework/Easy Assets/Open Asset Analysis", priority = 103)]
         public static void OpenWindow()
         {
             //Definer.Inided();

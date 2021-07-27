@@ -8,122 +8,17 @@ using System.Text;
 
 namespace EasyAsset
 {
+    //路径管理
     public class PathHelper
     {
         static bool inited = false;
         public static string EXTERNAL_ASSET_PATH { get; private set; }
-        public static void Init()
+        public static void Init(string path)
         {
             if (inited)
                 return;
             inited = true;
-            EXTERNAL_ASSET_PATH = Application.persistentDataPath + "/Asset/";
-        }
-    }
-
-    /// <summary>
-    /// 资源清单
-    /// </summary>
-    public class AssetList
-    {
-        //原始数据
-        public string rawData { get; private set; }
-
-        //Manifest文件名称
-        public string ManifestFilename { get; private set; }
-
-        //资源 <----> Assebundle 映射
-        Dictionary<string, string> asset2bundleMapping = new Dictionary<string, string>();
-
-        public static AssetList CreateAssetList(string path)
-        {
-            try
-            {
-                using (var sr = File.OpenText(path))
-                {
-                    StringBuilder raw = new StringBuilder();
-                    AssetList assetList = new AssetList();
-
-                    raw.Append(sr.ReadLine());
-                    var manifest_line = sr.ReadLine();
-                    raw.AppendLine();
-                    raw.Append(manifest_line);
-                    assetList.ManifestFilename = manifest_line.Split(':')[1];
-                    while (!sr.EndOfStream)
-                    {
-                        var line = sr.ReadLine();
-                        if (string.IsNullOrEmpty(line))
-                            continue;
-
-                        raw.AppendLine();
-                        raw.Append(line);
-
-                        var pair = line.Split(':');
-                        var asset_path = pair[0];
-                        var bundle_name = pair[1];
-                        assetList.asset2bundleMapping.Add(asset_path, bundle_name);
-                    }
-
-                    return assetList;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(ex.Message + "\n" + ex.StackTrace);
-            }
-            return null;
-        }
-
-        public string GetBundleName(string asset_path)
-        {
-            if (asset2bundleMapping.ContainsKey(asset_path))
-                return asset2bundleMapping[asset_path];
-
-            return "null";
-        }
-    }
-
-    /// <summary>
-    /// 资源包
-    /// </summary>
-    public class EasyBundle
-    {
-        public string bundleName
-        {
-            get
-            {
-                return bundle == null ? "null" : bundle.name;
-            }
-        }
-
-        private AssetBundle bundle;
-        public AssetBundle getBundle() { return bundle; }
-
-        private Dictionary<int, object> references = new Dictionary<int, object>();
-        public IEnumerator GetReferences()
-        {
-            return references.Values.GetEnumerator();
-        }
-
-        public EasyBundle(AssetBundle bundle)
-        {
-            this.bundle = bundle;
-        }
-
-        public void AddRefrence(object refrence)
-        {
-            if (refrence == null)
-                return;
-
-            if (refrence.GetType().IsValueType)
-            {
-                Debug.LogWarning("不能添加值类型的引用");
-                return;
-            }
-
-            var hash = refrence.GetHashCode();
-            if (!references.ContainsKey(hash))
-                references.Add(hash, refrence);
+            EXTERNAL_ASSET_PATH = Application.persistentDataPath + path + "/";
         }
     }
 
@@ -143,6 +38,7 @@ namespace EasyAsset
             _curindex = 0;
         }
 
+        //添加包引用
         public void AddBundle(string bundleName)
         {
             if (_curindex < bundles.Length)
@@ -152,24 +48,27 @@ namespace EasyAsset
             }
         }
 
+        //设置资源Hash值
         public void SetHash(int assetHash)
         {
             this.assetHash = assetHash;
         }
     }
 
-    /// <summary>
-    /// Bundle包含的资源Hash值，用于卸载Bundle时，快速查询并移除加载轨迹
-    /// </summary>
-    public class BundleAssetsHash
-    {
-        public List<int> assetHashList = new List<int>();
-        public void AddAsset(int hash)
-        {
-            assetHashList.Add(hash);
-        }
-    }
+    ///// <summary>
+    ///// Bundle包含的资源Hash值，用于卸载Bundle时，快速查询并移除加载轨迹
+    ///// </summary>
+    //public class BundleAssetsHash
+    //{
+    //    public List<int> assetHashList = new List<int>();
+    //    public void AddAsset(int hash)
+    //    {
+    //        assetHashList.Add(hash);
+    //    }
+    //}
+
 }
+
 /// <summary>
 /// 资源管理器
 /// </summary>
@@ -180,53 +79,36 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     AssetBundleManifest manifest = null;
 
-    //已加载的bundle
-    Dictionary<string, EasyBundle> loadedBundles = new Dictionary<string, EasyBundle>();
+    //已构建的easy bundle
+    Dictionary<string, EasyBundle> easyBundles = new Dictionary<string, EasyBundle>();
+    public IEnumerator GetLoadedBundles()
+    {
+        return easyBundles.Values.GetEnumerator();
+    }
 
-    //已加载的外部资源
-    Dictionary<string, UnityEngine.Object> externalAssets = new Dictionary<string, UnityEngine.Object>();
+    #region 资源引用记录
 
     //bundle加载轨迹
     Dictionary<int, BundleLoadTrack> bundleLoadTracks = new Dictionary<int, BundleLoadTrack>();
-    public BundleLoadTrack FindTrack(int hash)
+    public BundleLoadTrack FindTrack(int assetHash)
     {
-        if (bundleLoadTracks.ContainsKey(hash))
-            return bundleLoadTracks[hash];
+        if (bundleLoadTracks.ContainsKey(assetHash))
+            return bundleLoadTracks[assetHash];
         return null;
     }
-
-    //bundle包含资源hash
-    Dictionary<string, BundleAssetsHash> bundleAssetHash = new Dictionary<string, BundleAssetsHash>();
-    public void RecordBundleAssetHash(string bundleName, int hash)
+    public void AddBundleLoadTrack(BundleLoadTrack track)
     {
-        if (!bundleAssetHash.ContainsKey(bundleName))
-            bundleAssetHash.Add(bundleName, new BundleAssetsHash());
-        bundleAssetHash[bundleName].AddAsset(hash);
-    }
-
-    public IEnumerator GetLoadedBundles()
-    {
-        return loadedBundles.Values.GetEnumerator();
-    }
-
-    public override void Awake()
-    {
-        base.Awake();
-        PathHelper.Init();
-    }
-
-    public static bool Init()
-    {
-        Instance.externalAssetList = AssetList.CreateAssetList(PathHelper.EXTERNAL_ASSET_PATH + "assetlist");
-
-        if (Instance.externalAssetList == null)
+        if (!bundleLoadTracks.ContainsKey(track.assetHash))
         {
-            Debug.LogError("加载外部资源清单失败!");
-            return false;
+            bundleLoadTracks.Add(track.assetHash, track);
+            //Debug.Log("real 增加加载轨迹 " + track.assetHash);
         }
+    }
 
-        Instance.manifest = AssetBundle.LoadFromFile(PathHelper.EXTERNAL_ASSET_PATH + Instance.externalAssetList.ManifestFilename).LoadAsset<AssetBundleManifest>("assetbundlemanifest");
-        return true;
+    void RemoveBundleLoadTrack(int assetHash)
+    {
+        if (bundleLoadTracks.ContainsKey(assetHash))
+            bundleLoadTracks.Remove(assetHash);
     }
 
     /// <summary>
@@ -236,6 +118,10 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     /// <param name="refrence"></param>
     public static void TrackingAsset(UnityEngine.Object asset, object refrence)
     {
+        if (asset == null
+            || refrence == null)
+            return;
+
         var hash = asset.GetHashCode();
 
         var tracks = Instance.FindTrack(hash);
@@ -247,12 +133,16 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
                 var track_bundle = Instance.FindBundle(bundleName);
                 if (track_bundle != null)
                 {
+                    //Debug.Log("want add refrence => " + hash + "," + refrence);
                     track_bundle.AddRefrence(refrence);
-                    Instance.RecordBundleAssetHash(bundleName, hash);
                 }
             }
         }
     }
+
+    #endregion
+
+    #region 同步加载
 
     /// <summary>
     /// 同步加载GameObject
@@ -296,23 +186,17 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return Resources.Load<T>(assetPath);
         }
 
-        if (externalAssets.ContainsKey(assetPath))
-            return externalAssets[assetPath] as T;
+        var direct_bundle = GetEasyBundle(bundleName);
 
-        if (!loadedBundles.ContainsKey(bundleName))
-            LoadBundle(bundleName);
-
-        var direct_bundle = loadedBundles[bundleName];
         //加载依赖
         string[] dps = manifest.GetAllDependencies(direct_bundle.bundleName);
 
         BundleLoadTrack track = new BundleLoadTrack(dps.Length + 1);
-        //tracks = new EasyBundle[dps.Length + 1];
         for (int i = 0; i < dps.Length; i++)
         {
             var dp = dps[i];
-            var bd = LoadBundle(dp);
-            if (bd == null)
+            var bd = GetEasyBundle(dp);
+            if (!bd.LoadBundle())
             {
                 Debug.LogError("加载 " + assetPath + " 失败!" + "\n无法加载资源依赖包 => " + dp);
                 return null;
@@ -320,44 +204,247 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             track.AddBundle(bd.bundleName);
         }
 
-        track.AddBundle(direct_bundle.bundleName);
-        T asset = direct_bundle.getBundle().LoadAsset<T>(assetPath);
-        track.SetHash(asset.GetHashCode());
-        bundleLoadTracks.Add(track.assetHash, track);   //添加记录
+        if (!direct_bundle.LoadBundle())
+        {
+            Debug.LogError("加载 " + assetPath + " 失败!" + "\n无法加载资源依赖包 => " + direct_bundle.bundleName);
+            return null;
+        }
 
-        externalAssets.Add(assetPath, asset);           //缓存外部资源 
+        track.AddBundle(direct_bundle.bundleName);
+        T asset = direct_bundle.GetAsset<T>(assetPath);
+        track.SetHash(asset.GetHashCode());
+        AddBundleLoadTrack(track);
+
         return asset;
     }
 
     //查找bundle
     public EasyBundle FindBundle(string bundleName)
     {
-        if (loadedBundles.ContainsKey(bundleName))
-            return loadedBundles[bundleName];
+        if (easyBundles.ContainsKey(bundleName))
+            return easyBundles[bundleName];
         return null;
     }
 
-    //加载Bundle
-    EasyBundle LoadBundle(string bundleName)
+    //获得EasyBundle
+    EasyBundle GetEasyBundle(string bundleName)
     {
-        if (!loadedBundles.ContainsKey(bundleName))
+        if (!easyBundles.ContainsKey(bundleName))
         {
-            var bundle = AssetBundle.LoadFromFile(PathHelper.EXTERNAL_ASSET_PATH + bundleName);
-            if (bundle != null)
-            {
-                EasyBundle eBundle = new EasyBundle(bundle);
-                loadedBundles.Add(eBundle.bundleName, eBundle);
-                return eBundle;
-            }
+            EasyBundle eBundle = TryGetDisposeBundle(bundleName);
 
-            return null;
+            if (eBundle == null)
+                eBundle = new EasyBundle(bundleName);
+            easyBundles.Add(eBundle.bundleName, eBundle);
+            return eBundle;
         }
 
-        return loadedBundles[bundleName];
+        return easyBundles[bundleName];
     }
 
-    void LoadBundleAsync()
+    EasyBundle TryGetDisposeBundle(string bundleName)
     {
-        return;
+        if (disposePool.ContainsKey(bundleName))
+        {
+            var bundle = disposePool[bundleName];
+            return bundle;
+        }
+
+        return null;
     }
+
+    #endregion
+
+    #region 异步加载
+
+    Dictionary<ulong, LoadAsyncTask> loadAsyncTasks = new Dictionary<ulong, LoadAsyncTask>();
+    Queue<LoadAsyncTask> finishTasks = new Queue<LoadAsyncTask>(); 
+
+    public static void LoadAssetAsync<T>(string assetPath, object refrenceObject, Action<T> onFinish)
+        where T : UnityEngine.Object
+    {
+        Instance.LoadAssetAsync_Internal(assetPath, refrenceObject, onFinish);
+    }
+
+    void LoadAssetAsync_Internal<T>(string assetPath, object refrenceObject, Action<T> onFinish,
+        bool load_gameobject = false,Transform parent = null)
+        where T : UnityEngine.Object
+    {
+        var bundleName = externalAssetList.GetBundleName(assetPath);
+        if (bundleName == "null")
+        {//如果是内部资源,直接使用Resources加载
+            var request = Resources.LoadAsync<T>(assetPath);
+            LoadAsyncTask r_task = new LoadAsyncTask(request, onFinish);
+            r_task.MarkLoadGameobject(load_gameobject, parent);
+            loadAsyncTasks.Add(r_task.taskUid, r_task);
+            return;
+        }
+
+        //异步加载外部资源
+        List<EasyBundle> easyBundles = new List<EasyBundle>();
+        string[] dps = manifest.GetAllDependencies(bundleName);
+        foreach (var dp in dps)
+        {
+            easyBundles.Add(GetEasyBundle(dp));
+        }
+        easyBundles.Add(GetEasyBundle(bundleName));
+        LoadAsyncTask a_task = new LoadAsyncTask(assetPath, bundleName, easyBundles,
+            refrenceObject, onFinish);
+        a_task.MarkLoadGameobject(load_gameobject, parent);
+        loadAsyncTasks.Add(a_task.taskUid, a_task);
+    }
+
+    void TickRequest()
+    {
+        foreach (var task in loadAsyncTasks.Values)
+        {
+            task.Tick();
+            if (task.isFinish)
+                finishTasks.Enqueue(task);
+        }
+
+        while (finishTasks.Count > 0)
+        {
+            using (var f_task = finishTasks.Dequeue())
+            {
+                loadAsyncTasks.Remove(f_task.taskUid);
+                f_task.InvokeFinish();
+            }
+        }
+    }
+
+    public static void LoadGameobjectAsync(string assetPath, Action<GameObject> onFinish, Transform parent = null)
+    {
+        Instance.LoadAssetAsync_Internal(assetPath, null, onFinish, true, parent);
+    }
+
+    #endregion
+
+    #region 卸载
+
+    float DisposeCacheTime = 5f;
+
+    //Bundle移除缓存
+    Dictionary<string, EasyBundle> disposePool = new Dictionary<string, EasyBundle>();
+    public IEnumerator GetDisposedBundles() { return disposePool.Values.GetEnumerator(); }
+    Stack<EasyBundle> removeStack = new Stack<EasyBundle>();
+
+    //处理移除的Bundle
+    void HandleRemovedBundle()
+    {
+        while (removeStack.Count > 0)
+        {
+            var eBundle = removeStack.Pop();
+
+            if (!eBundle.disposed)      //若包已经被捞出，则跳过
+                continue;
+
+            var loaded = eBundle.GetLoadedAssets();
+            while (loaded.MoveNext())
+                RemoveBundleLoadTrack(loaded.GetHashCode());
+
+            eBundle.onDispose();
+
+            disposePool.Remove(eBundle.bundleName);
+            Debug.Log("移除 Bundle " + eBundle.bundleName);
+        }
+    }
+
+    Stack<string> disposeAddCache = new Stack<string>();
+    void TickRefrence()
+    {
+        foreach (var bundle in easyBundles)
+        {
+            if (!disposePool.ContainsKey(bundle.Key))
+            {
+                var eb = bundle.Value;
+                eb.Tick();
+                if (eb.used && !eb.HasRefrence)
+                    eb.ReleaseBundle();
+                if (eb.disposed)
+                    disposeAddCache.Push(bundle.Key);
+            }
+        }
+
+        while (disposeAddCache.Count > 0)
+        {
+            var rm = disposeAddCache.Pop();
+            disposePool.Add(rm, easyBundles[rm]);
+            easyBundles.Remove(rm);
+        }
+    }
+
+    Stack<string> disposeRemoveCache = new Stack<string>();
+
+    void TickRemovePool()
+    {
+        foreach (var rm_bundle in disposePool)
+        {
+            if (rm_bundle.Value.disposed)
+            {
+                if (rm_bundle.Value.disposedTime > DisposeCacheTime - RefrenceCheckTime)
+                    removeStack.Push(rm_bundle.Value);
+            }
+            else
+                disposeRemoveCache.Push(rm_bundle.Key);
+        }
+
+        while (disposeRemoveCache.Count > 0)
+            disposePool.Remove(disposeRemoveCache.Pop());
+    }
+
+    #endregion
+
+    #region Unity Function
+
+    EasyAssetConfig config;
+
+    public override void Awake()
+    {
+        base.Awake();
+        config = Resources.Load<EasyAssetConfig>("EasyAssetConfig");
+        PathHelper.Init(config.LoadPath);
+        
+        DisposeCacheTime = config.DisposeCacheTime;
+        RefrenceCheckTime = config.RefrenceCheckTime;
+    }
+
+    public static bool Init()
+    {
+        Instance.externalAssetList = AssetList.CreateAssetList(PathHelper.EXTERNAL_ASSET_PATH + "assetlist");
+
+        if (Instance.externalAssetList == null)
+        {
+            Debug.LogError("加载外部资源清单失败!");
+            return false;
+        }
+
+        Instance.manifest = AssetBundle.LoadFromFile(PathHelper.EXTERNAL_ASSET_PATH + Instance.externalAssetList.ManifestFilename).LoadAsset<AssetBundleManifest>("assetbundlemanifest");
+        return true;
+    }
+
+    float lastUpdateTime = 0;
+    float RefrenceCheckTime = 1f;
+    private void Update()
+    {
+        if (Time.realtimeSinceStartup - lastUpdateTime >= RefrenceCheckTime)
+        {
+            //更新当前引用状态
+            TickRefrence();
+
+            TickRemovePool();
+            lastUpdateTime = Time.realtimeSinceStartup;
+        }
+
+        //移除包
+        HandleRemovedBundle();
+
+        //更新请求
+        TickRequest();
+
+        //清理异步加载请求池
+        ExternalReqeuestPool.Instance.Tick();
+    }
+
+    #endregion
 }
