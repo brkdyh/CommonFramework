@@ -5,6 +5,7 @@ using System.IO;
 using System;
 using EasyAsset;
 using System.Text;
+using UnityEngine.SceneManagement;
 
 namespace EasyAsset
 {
@@ -125,7 +126,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     /// </summary>
     /// <param name="asset"></param>
     /// <param name="refrence"></param>
-    public static void TrackingAsset(UnityEngine.Object asset, object refrence)
+    public static void TrackingAsset(object asset, object refrence)
     {
         if (asset == null
             || refrence == null)
@@ -133,11 +134,11 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
         var hash = asset.GetHashCode();
 
-        var tracks = Instance.FindTrack(hash);
-        if (tracks != null)
+        var track = Instance.FindTrack(hash);
+        if (track != null)
         {
             //记录引用
-            foreach (var bundleName in tracks.bundles)
+            foreach (var bundleName in track.bundles)
             {
                 var track_bundle = Instance.FindBundle(bundleName);
                 if (track_bundle != null)
@@ -267,7 +268,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     #region 异步加载
 
     Dictionary<ulong, LoadAsyncTask> loadAsyncTasks = new Dictionary<ulong, LoadAsyncTask>();
-    Queue<LoadAsyncTask> finishTasks = new Queue<LoadAsyncTask>(); 
+    Queue<LoadAsyncTask> finishTasks = new Queue<LoadAsyncTask>();
 
     public static void LoadAssetAsync<T>(string assetPath, object refrenceObject, Action<T> onFinish)
         where T : UnityEngine.Object
@@ -276,7 +277,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     }
 
     void LoadAssetAsync_Internal<T>(string assetPath, object refrenceObject, Action<T> onFinish,
-        bool load_gameobject = false,Transform parent = null)
+        bool load_gameobject = false, Transform parent = null)
         where T : UnityEngine.Object
     {
         var bundleName = externalAssetList.GetBundleName(assetPath);
@@ -329,6 +330,146 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     #endregion
 
+    #region 加载场景
+
+    bool isLoadingScene = false;
+    AsyncOperation sceneLoadOpeartion;
+    Action onLoadSceneCB;
+    Action<float> onProgressCB;
+    bool trackingSceneRefrence = false;     //追踪场景引用
+    List<EasyBundle> trackBundles;          //加载路径上的包
+
+    string ScenePath2SceneName(string scenePath)
+    {
+        return Path.GetFileName(scenePath).Replace(Path.GetExtension(scenePath), ""); ;
+    }
+
+    //是否是内建的场景
+    bool inBuildScene(string scenePath)
+    {
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            var sceneName = ScenePath2SceneName(scenePath);
+            var scene = SceneManager.GetSceneByBuildIndex(i);
+            if (scene.name == sceneName)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool LoadScene(string scenePath, Action onLoadScene, Action<float> onProgress = null)
+    {
+        if (Instance.isLoadingScene)
+            return false;
+
+        if (Instance.inBuildScene(scenePath))
+        {
+            Instance.onLoadSceneCB = onLoadScene;
+            Instance.onProgressCB = onProgress;
+            var sceneName = Instance.ScenePath2SceneName(scenePath);
+            Instance.sceneLoadOpeartion = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            Instance.isLoadingScene = true;
+            Instance.trackingSceneRefrence = false;
+            return true;
+        }
+
+        return Instance.LoadScene_Internal(scenePath, onLoadScene, onProgress);
+    }
+
+    bool LoadScene_Internal(string scenePath, Action onLoadScene, Action<float> onProgress)
+    {
+        var bundleName = externalAssetList.GetBundleName(scenePath);
+        if (bundleName == "null")
+            return false;
+
+        List<EasyBundle> easyBundles = new List<EasyBundle>();
+        string[] dps = manifest.GetAllDependencies(bundleName);
+        foreach (var dp in dps)
+        {
+            easyBundles.Add(GetEasyBundle(dp));
+        }
+        easyBundles.Add(GetEasyBundle(bundleName));
+
+        onLoadSceneCB = onLoadScene;
+        onProgressCB = onProgress;
+        isLoadingScene = true;
+
+        LoadAsyncTask a_task = new LoadAsyncTask(scenePath, easyBundles, onLoadSceneBundle);
+        loadAsyncTasks.Add(a_task.taskUid, a_task);
+
+        return true;
+    }
+
+    //记载完场景依赖的Bundle
+    void onLoadSceneBundle(string scenePath, List<EasyBundle> trackBundles)
+    {
+        var sceneName = ScenePath2SceneName(scenePath);
+        this.trackBundles = trackBundles;
+        trackingSceneRefrence = true;
+        sceneLoadOpeartion = SceneManager.LoadSceneAsync(sceneName);
+    }
+
+    //检测加载场景
+    void TickLoadScene()
+    {
+        if (!isLoadingScene)
+            return;
+        if (sceneLoadOpeartion == null)
+            return;
+        if (!sceneLoadOpeartion.isDone)
+        {//加载中
+            try
+            {
+                onProgressCB?.Invoke(sceneLoadOpeartion.progress);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+        else
+        {
+            isLoadingScene = false;
+            sceneLoadOpeartion.allowSceneActivation = true;
+
+            try
+            {
+                onLoadSceneCB?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+
+            //引用记录
+            if (trackingSceneRefrence
+                && trackBundles != null)
+            {
+                BundleLoadTrack track = new BundleLoadTrack(trackBundles.Count);
+                foreach (var eb in trackBundles)
+                {
+                    track.AddBundle(eb.bundleName);
+                    eb.SetUsed();
+                }
+                var scene = SceneManager.GetActiveScene();
+                var refrence = new GameObject(scene.name + "(Scene)");
+                refrence.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                track.SetHash(scene.GetHashCode());
+                AddBundleLoadTrack(track);
+                TrackingAsset(scene, refrence);
+            }
+
+            trackingSceneRefrence = false;
+            trackBundles = null;
+            sceneLoadOpeartion = null;
+            onLoadSceneCB = null;
+            onProgressCB = null;
+        }
+    }
+
+    #endregion
+
     #region 卸载
 
     //Bundle移除缓存
@@ -353,7 +494,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             eBundle.onDispose();
 
             disposePool.Remove(eBundle.bundleName);
-            Debug.Log("移除 Bundle " + eBundle.bundleName);
+            Debug.Log("Release Bundle : " + eBundle.bundleName);
         }
     }
 
@@ -445,6 +586,9 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
         //清理异步加载请求池
         ExternalReqeuestPool.Instance.Tick();
+
+        //加载场景
+        TickLoadScene();
     }
 
     #endregion

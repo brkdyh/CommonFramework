@@ -211,7 +211,10 @@ namespace EasyAsset
 
             var refHash = refrence.GetHashCode();
             if (!references.ContainsKey(refHash))
+            {
                 references.Add(refHash, refrence);
+                //Debug.Log(bundleName+ " real add refrence " + refrence);
+            }
             else
                 Debug.LogWarning(bundleName + " already contains refrence " + refrence);
         }

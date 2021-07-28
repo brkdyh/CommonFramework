@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 1246044488
+CRC: 2745976963
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -13,3 +13,7 @@ AssetBundleManifest:
       Name: tc
       Dependencies:
         Dependency_0: ta
+    Info_3:
+      Name: tscene
+      Dependencies:
+        Dependency_0: tc

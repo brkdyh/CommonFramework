@@ -98,6 +98,7 @@ namespace EasyAsset
                         CopyToPersistentPath();
 
                     System.Diagnostics.Process.Start(buildPath);
+                    return;
                 }
 
                 GUILayout.FlexibleSpace();
@@ -155,11 +156,23 @@ namespace EasyAsset
                     {
                         Debug.Log("load bundle: " + bundle_name);
                         var bundle = AssetBundle.LoadFromFile(buildPath + "/" + bundle_name);
-                        string[] bundleAssets = bundle.GetAllAssetNames();
-                        foreach (var asset in bundleAssets)
-                        {
-                            Debug.Log(bundle.name + " => " + asset);
-                            sw.WriteLine(asset + ":" + bundle.name);
+                        if (!bundle.isStreamedSceneAssetBundle)
+                        {//非场景AB包
+                            string[] bundleAssets = bundle.GetAllAssetNames();
+                            foreach (var asset in bundleAssets)
+                            {
+                                Debug.Log(bundle.name + " => " + asset);
+                                sw.WriteLine(asset + ":" + bundle.name);
+                            }
+                        }
+                        else
+                        {//场景AB包
+                            string[] bundleScenes = bundle.GetAllScenePaths();
+                            foreach (var scene in bundleScenes)
+                            {
+                                Debug.Log(bundle.name + " => " + scene);
+                                sw.WriteLine(scene + ":" + bundle.name);
+                            }
                         }
 
                         bundle.Unload(true);

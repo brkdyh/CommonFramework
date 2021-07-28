@@ -83,7 +83,12 @@ namespace EasyAsset
         //加载模式（内部资源 or 外部资源）
         bool loadInternal = false;
 
-        Delegate onFinish;
+        //是否只加载Asset Bundle
+        bool onlyLoadBundle = false;
+
+        Delegate onAssetLoadFinish;         //资源加载完成
+        
+        Delegate onBundleLoadFinish;        //AB包加载完成
 
         public bool loadGameObject { get; private set; }
         Transform parent = null;
@@ -93,6 +98,7 @@ namespace EasyAsset
             this.parent = parent;
         }
 
+        //创建异步任务--加载资源
         public LoadAsyncTask(string assetPath, string assetBundleName, List<EasyBundle> easyBundles,
             object refrence, Delegate callback)
         {
@@ -102,10 +108,23 @@ namespace EasyAsset
             this.assetBundleName = assetBundleName;
             this.easyBundles = easyBundles;
             this.refrence = refrence;
-            onFinish = callback;
+            onAssetLoadFinish = callback;
             loadInternal = false;
             loadStep = 0;
             asyncDone = false;
+            onlyLoadBundle = false;
+        }
+
+        //创建异步任务--只加载AB包,用于加载场景
+        public LoadAsyncTask(string assetPath, List<EasyBundle> easyBundles, Action<string, List<EasyBundle>> callback)
+        {
+            this.assetPath = assetPath;
+            this.easyBundles = easyBundles;
+            onBundleLoadFinish = callback;
+            loadInternal = false;
+            loadStep = 0;
+            asyncDone = false;
+            onlyLoadBundle = true;
         }
 
         public LoadAsyncTask(ResourceRequest request,
@@ -113,8 +132,7 @@ namespace EasyAsset
         {
             taskUid = ApplyTaskUID();
             internalReq = request;
-            onFinish = callback;
-
+            onAssetLoadFinish = callback;
             loadInternal = true;
         }
 
@@ -169,7 +187,7 @@ namespace EasyAsset
             if (!eb.isLoaded)
             {
                 externalReq = eb.LoadBundleAsync();
-                Debug.Log("Load " + easyBundles[loadStep].bundleName + " => " + externalReq);
+                //Debug.Log("Load " + easyBundles[loadStep].bundleName + " => " + externalReq);
             }
             loadStep++;
         }
@@ -202,11 +220,11 @@ namespace EasyAsset
                 try
                 {
                     if (!loadGameObject)
-                        onFinish.DynamicInvoke(internalReq.asset);
+                        onAssetLoadFinish.DynamicInvoke(internalReq.asset);
                     else
                     {
                         var go = GameObject.Instantiate(internalReq.asset, parent);
-                        onFinish.DynamicInvoke(go);
+                        onAssetLoadFinish.DynamicInvoke(go);
                     }
                 }
                 catch (Exception ex)
@@ -216,24 +234,37 @@ namespace EasyAsset
             }
             else
             {
-                var abd = FindBundle(assetBundleName);
-                if (abd != null)
-                {
-                    var asset = abd.GetAsset<UnityEngine.Object>(assetPath);
-                    UnityEngine.Object go = null;
-                    if (loadGameObject)
-                        go = GameObject.Instantiate(asset, parent);
+                if (!onlyLoadBundle)
+                {//加载资源
+                    var abd = FindBundle(assetBundleName);
+                    if (abd != null)
+                    {
+                        var asset = abd.GetAsset<UnityEngine.Object>(assetPath);
+                        UnityEngine.Object go = null;
+                        if (loadGameObject)
+                            go = GameObject.Instantiate(asset, parent);
 
-                    TrackingAsset(asset, loadGameObject ? go : refrence);
+                        TrackingAsset(asset, loadGameObject ? go : refrence);
 
+                        try
+                        {
+                            onAssetLoadFinish?.DynamicInvoke(loadGameObject ? go : asset);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+                else
+                {//加载场景时，只加载包
                     try
                     {
-                        onFinish?.DynamicInvoke(loadGameObject ? go : asset);
+                        onBundleLoadFinish?.DynamicInvoke(assetPath, easyBundles);
                     }
                     catch (Exception ex)
                     {
                         Debug.LogException(ex);
-
                     }
                 }
             }
@@ -241,7 +272,7 @@ namespace EasyAsset
 
         public void Dispose()
         {
-            onFinish = null;
+            onAssetLoadFinish = null;
             internalReq = null;
             externalReq = null;
             easyBundles = null;

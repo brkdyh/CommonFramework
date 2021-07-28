@@ -9,8 +9,6 @@ public class EAExample : MonoBehaviour
 
     private void Awake()
     {
-        AssetMaintainer.Init();
-
         mat = AssetMaintainer.LoadAsset<Material>("assets/framework/easyassets/example/resources/mat.mat", this);
         texture = AssetMaintainer.LoadAsset<Texture>("assets/framework/easyassets/example/resources/tex.png", gameObject);
 
@@ -58,9 +56,9 @@ public class EAExample : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
+        if (Input.GetKeyDown(KeyCode.M))
         {
-            Debug.Log(texture);
+            UnityEngine.SceneManagement.SceneManager.LoadScene("EANull");
         }
     }
 }

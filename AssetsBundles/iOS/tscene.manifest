@@ -1,0 +1,49 @@
+ManifestFileVersion: 0
+CRC: 1896254020
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 2581a8455ef92533a3627d15243dc44d
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: fc891c8dcc4a5cba29766e43c98105ce
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 20
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 81
+  Script: {instanceID: 0}
+- Class: 104
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 67c588f7aa8674372a3b841ef7c718c3, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 135
+  Script: {instanceID: 0}
+- Class: 157
+  Script: {instanceID: 0}
+- Class: 196
+  Script: {instanceID: 0}
+Assets:
+- Assets/Framework/EasyAssets/Example/Resources/EAExample.unity
+Dependencies:
+- /Users/dongyh/github/CommonFramework/AssetsBundles/iOS/tc

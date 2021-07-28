@@ -176,7 +176,11 @@ namespace EasyAsset
                 var ab = curBundle.getBundle();
                 if (ab != null)
                 {
-                    string[] all = curBundle.getBundle().GetAllAssetNames();
+                    string[] all;
+                    if (!ab.isStreamedSceneAssetBundle)
+                        all = ab.GetAllAssetNames();
+                    else
+                        all = ab.GetAllScenePaths();
 
                     foreach (var a in all)
                     {
