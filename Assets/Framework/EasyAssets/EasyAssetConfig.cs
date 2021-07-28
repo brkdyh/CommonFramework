@@ -2,13 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu]
-public class EasyAssetConfig : ScriptableObject
+namespace EasyAsset
 {
-    [HideInInspector]
-    public string LoadPath = "/Asset";
-    [HideInInspector]
-    public float RefrenceCheckTime = 1f;
-    [HideInInspector]
-    public float DisposeCacheTime = 5f;
+    [CreateAssetMenu]
+    public class EasyAssetConfig : ScriptableObject
+    {
+        [HideInInspector]
+        public string LoadPath = "/Asset";
+        [HideInInspector]
+        public float RefrenceCheckTime = 1f;
+        [HideInInspector]
+        public float DisposeCacheTime = 5f;
+        [HideInInspector]
+        public float AssetBundleLiveTime = 5f;
+    }
 }

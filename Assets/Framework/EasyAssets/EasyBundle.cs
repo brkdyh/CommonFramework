@@ -26,6 +26,7 @@ namespace EasyAsset
 
         //是否已使用过
         public bool used { get; private set; } = false;
+        public void SetUsed() { used = true; }
 
         #region 加载
 
@@ -222,8 +223,7 @@ namespace EasyAsset
         #endregion
 
         List<int> rm = new List<int>();
-
-        public void Tick()
+        void CheckRefrence()
         {
             rm.Clear();
             foreach (var r in references)
@@ -235,6 +235,21 @@ namespace EasyAsset
 
             foreach (var k in rm)
                 references.Remove(k);
+        }
+
+        void CheckBundleLive()
+        {
+            if (!used)
+                return;
+
+            if (BundleLoadedTime >= Setting.AssetBundleLiveTime)
+                UnloadBundle();
+        }
+
+        public void Tick()
+        {
+            CheckRefrence();
+            CheckBundleLive();
         }
     }
 }

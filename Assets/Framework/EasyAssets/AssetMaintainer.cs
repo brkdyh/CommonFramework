@@ -8,6 +8,28 @@ using System.Text;
 
 namespace EasyAsset
 {
+    public static class Setting
+    {
+        public static EasyAssetConfig config { get; private set; }
+        public static string LoadPath { get; set; }
+        public static float DisposeCacheTime { get; private set; } = 5f;
+        public static float RefrenceCheckTime { get; private set; } = 1f;
+        public static float AssetBundleLiveTime { get; private set; } = 5f;
+
+        static bool inited = false;
+        public static void InitSetting()
+        {
+            if (inited)
+                return;
+            config = Resources.Load<EasyAssetConfig>("EasyAssetConfig");
+            LoadPath = config.LoadPath;
+            DisposeCacheTime = config.DisposeCacheTime;
+            RefrenceCheckTime = config.RefrenceCheckTime;
+            AssetBundleLiveTime = config.AssetBundleLiveTime;
+            inited = true;
+        }
+    }
+
     //路径管理
     public class PathHelper
     {
@@ -54,19 +76,6 @@ namespace EasyAsset
             this.assetHash = assetHash;
         }
     }
-
-    ///// <summary>
-    ///// Bundle包含的资源Hash值，用于卸载Bundle时，快速查询并移除加载轨迹
-    ///// </summary>
-    //public class BundleAssetsHash
-    //{
-    //    public List<int> assetHashList = new List<int>();
-    //    public void AddAsset(int hash)
-    //    {
-    //        assetHashList.Add(hash);
-    //    }
-    //}
-
 }
 
 /// <summary>
@@ -322,8 +331,6 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     #region 卸载
 
-    float DisposeCacheTime = 5f;
-
     //Bundle移除缓存
     Dictionary<string, EasyBundle> disposePool = new Dictionary<string, EasyBundle>();
     public IEnumerator GetDisposedBundles() { return disposePool.Values.GetEnumerator(); }
@@ -376,13 +383,13 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     Stack<string> disposeRemoveCache = new Stack<string>();
 
-    void TickRemovePool()
+    void TickDisposePool()
     {
         foreach (var rm_bundle in disposePool)
         {
             if (rm_bundle.Value.disposed)
             {
-                if (rm_bundle.Value.disposedTime > DisposeCacheTime - RefrenceCheckTime)
+                if (rm_bundle.Value.disposedTime > Setting.DisposeCacheTime - Setting.RefrenceCheckTime)
                     removeStack.Push(rm_bundle.Value);
             }
             else
@@ -397,16 +404,11 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     #region Unity Function
 
-    EasyAssetConfig config;
-
     public override void Awake()
     {
         base.Awake();
-        config = Resources.Load<EasyAssetConfig>("EasyAssetConfig");
-        PathHelper.Init(config.LoadPath);
-        
-        DisposeCacheTime = config.DisposeCacheTime;
-        RefrenceCheckTime = config.RefrenceCheckTime;
+        Setting.InitSetting();
+        PathHelper.Init(Setting.LoadPath);
     }
 
     public static bool Init()
@@ -424,15 +426,14 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     }
 
     float lastUpdateTime = 0;
-    float RefrenceCheckTime = 1f;
     private void Update()
     {
-        if (Time.realtimeSinceStartup - lastUpdateTime >= RefrenceCheckTime)
+        if (Time.realtimeSinceStartup - lastUpdateTime >= Setting.RefrenceCheckTime)
         {
             //更新当前引用状态
             TickRefrence();
 
-            TickRemovePool();
+            TickDisposePool();
             lastUpdateTime = Time.realtimeSinceStartup;
         }
 

@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: EasyAssetConfig
   m_EditorClassIdentifier: 
   LoadPath: /Asset
+  RefrenceCheckTime: 1
+  DisposeCacheTime: 5
+  AssetBundleLiveTime: 5

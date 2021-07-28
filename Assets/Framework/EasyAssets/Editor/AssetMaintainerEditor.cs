@@ -187,7 +187,7 @@ namespace EasyAsset
                 }
                 else
                 {
-                    GUILayout.Label("Asset Bundle 为空");
+                    GUILayout.Label("Asset Bundle 已被卸载。");
                 }
                 GUILayout.EndScrollView();
                 EndSpace(10);
@@ -197,12 +197,20 @@ namespace EasyAsset
                 EndSpace(10);
 
                 BeginSpace(15);
-                GUILayout.Label("已加载时间: " + curBundle.BundleLoadedTime.ToString("0") + " s");
+                if (curBundle.isLoaded)
+                    GUILayout.Label("已加载时间: " + curBundle.BundleLoadedTime.ToString("0") + " s");
+                else
+                    GUILayout.Label("已加载时间: " + "已卸载");
+
                 repaint = true;
                 EndSpace(15);
 
                 BeginSpace(15);
-                GUILayout.Label("是否使用过: " + (curBundle.used ? "已使用" : "未使用"));
+                if (curBundle.isLoaded)
+                    GUILayout.Label("是否使用过: " + (curBundle.used ? "已使用" : "未使用"));
+                else
+                    GUILayout.Label("是否使用过: "+"已卸载");
+
                 EndSpace(15);
 
                 BeginSpace(15);
@@ -223,6 +231,7 @@ namespace EasyAsset
                         }
                         if (GUILayout.Button("释放"))
                         {
+                            curBundle.SetUsed();
                             curBundle.ReleaseBundle();
                             curBundle = null;
                             return;
