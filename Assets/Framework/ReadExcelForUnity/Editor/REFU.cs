@@ -125,7 +125,7 @@ namespace REFU
     {
 
         static REFU instance;
-        [MenuItem("Common Framework/REFU/Open Window",priority = 102)]
+        [MenuItem("公共框架/REFU/打开REFU Window",priority = 102)]
         public static void OpenWindow()
         {
             GetInstance();

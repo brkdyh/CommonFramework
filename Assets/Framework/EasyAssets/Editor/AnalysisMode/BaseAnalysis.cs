@@ -129,7 +129,7 @@ namespace EasyAsset
             return maps[path];
         }
 
-        public void DrawAsset(AssetData assetData, Color assetColor, bool detail, string detailName, bool select)
+        public void DrawAsset(AssetData assetData, Color assetColor, bool detail, string detailName, bool select, bool cross)
         {
             GUILayout.BeginVertical("box");
 
@@ -147,6 +147,14 @@ namespace EasyAsset
             if (detail && GUILayout.Button(detailName))
             {
                 curAssetPath = assetData.assetPath;
+            }
+
+            if (cross && GUILayout.Button("计算交集"))
+            {
+                if (!IntersectionAnalysis.enabled)
+                    return;
+                IntersectionAnalysis.instance.AddAnalysisData(assetData);
+                return;
             }
 
             if (select && GUILayout.Button("选中"))

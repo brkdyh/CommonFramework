@@ -26,6 +26,9 @@ namespace EasyAsset
         {
             try
             {
+                if (!File.Exists(path))
+                    return new AssetList();
+
                 using (var sr = File.OpenText(path))
                 {
                     StringBuilder raw = new StringBuilder();
@@ -67,7 +70,7 @@ namespace EasyAsset
             {
                 Debug.LogError(ex.Message + "\n" + ex.StackTrace);
             }
-            return null;
+            return new AssetList();
         }
 
         public string GetBundleName(string asset_path)

@@ -77,6 +77,71 @@ namespace EasyAsset
             this.assetHash = assetHash;
         }
     }
+
+    public class SceneHelper
+    {
+        static bool inited = false;
+
+        static Dictionary<string, bool> buildInSceneMap = new Dictionary<string, bool>();
+
+        public static void Init()
+        {
+            if (inited)
+                return;
+
+            var path = PathHelper.EXTERNAL_ASSET_PATH + "buildinscenes";
+            if (!File.Exists(path))
+                return;
+
+            inited = true;
+
+            using (var sr = File.OpenText(path))
+            {
+                sr.ReadLine();
+                while (!sr.EndOfStream)
+                {
+                    var line = sr.ReadLine();
+                    var subs = line.Split(':');
+                    var sceneName = ScenePath2SceneName(subs[0]);
+                    bool enable = bool.Parse(subs[1]);
+
+                    if (!buildInSceneMap.ContainsKey(sceneName))
+                        buildInSceneMap.Add(sceneName, enable);
+                    Debug.Log("Build in Scene : " + sceneName + "," + enable);
+                }
+            }
+        }
+
+        public static string ScenePath2SceneName(string scenePath)
+        {
+            string name = "";
+            try
+            {
+                name = Path.GetFileName(scenePath).Replace(Path.GetExtension(scenePath), "");
+            }
+            catch(Exception ex)
+            {
+
+            }
+            return name;
+        }
+
+        public static bool isBuildInSceneByPath(string scenePath)
+        {
+            var sceneName = ScenePath2SceneName(scenePath);
+            return isBuildInSceneByName(sceneName);
+        }
+
+        public static bool isBuildInSceneByName(string sceneName)
+        {
+            if (!inited)
+                return true;
+
+            if (buildInSceneMap.ContainsKey(sceneName))
+                return buildInSceneMap[sceneName];
+            return false;
+        }
+    }
 }
 
 /// <summary>
@@ -339,23 +404,10 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     bool trackingSceneRefrence = false;     //追踪场景引用
     List<EasyBundle> trackBundles;          //加载路径上的包
 
-    string ScenePath2SceneName(string scenePath)
-    {
-        return Path.GetFileName(scenePath).Replace(Path.GetExtension(scenePath), ""); ;
-    }
-
     //是否是内建的场景
     bool inBuildScene(string scenePath)
     {
-        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
-        {
-            var sceneName = ScenePath2SceneName(scenePath);
-            var scene = SceneManager.GetSceneByBuildIndex(i);
-            if (scene.name == sceneName)
-                return true;
-        }
-
-        return false;
+        return SceneHelper.isBuildInSceneByPath(scenePath);
     }
 
     public static bool LoadScene(string scenePath, Action onLoadScene, Action<float> onProgress = null)
@@ -367,7 +419,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         {
             Instance.onLoadSceneCB = onLoadScene;
             Instance.onProgressCB = onProgress;
-            var sceneName = Instance.ScenePath2SceneName(scenePath);
+            var sceneName = SceneHelper.ScenePath2SceneName(scenePath);
             Instance.sceneLoadOpeartion = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             Instance.isLoadingScene = true;
             Instance.trackingSceneRefrence = false;
@@ -404,7 +456,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     //记载完场景依赖的Bundle
     void onLoadSceneBundle(string scenePath, List<EasyBundle> trackBundles)
     {
-        var sceneName = ScenePath2SceneName(scenePath);
+        var sceneName = SceneHelper.ScenePath2SceneName(scenePath);
         this.trackBundles = trackBundles;
         trackingSceneRefrence = true;
         sceneLoadOpeartion = SceneManager.LoadSceneAsync(sceneName);
@@ -550,6 +602,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         base.Awake();
         Setting.InitSetting();
         PathHelper.Init(Setting.LoadPath);
+        SceneHelper.Init();
     }
 
     public static bool Init()
@@ -562,7 +615,15 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return false;
         }
 
-        Instance.manifest = AssetBundle.LoadFromFile(PathHelper.EXTERNAL_ASSET_PATH + Instance.externalAssetList.ManifestFilename).LoadAsset<AssetBundleManifest>("assetbundlemanifest");
+        var manifestPath = PathHelper.EXTERNAL_ASSET_PATH + Instance.externalAssetList.ManifestFilename;
+        if (!File.Exists(manifestPath))
+            return false;
+
+        var manifestBundle = AssetBundle.LoadFromFile(manifestPath);
+        if (manifestBundle == null)
+            return false;
+
+        Instance.manifest = manifestBundle.LoadAsset<AssetBundleManifest>("assetbundlemanifest");
         return true;
     }
 

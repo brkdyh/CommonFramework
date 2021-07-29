@@ -14,7 +14,7 @@ namespace EasyAsset
     {
         public static AssetAnalysis instance { get; private set; }
 
-        [MenuItem("Common Framework/Easy Assets/Open Asset Analysis", priority = 103)]
+        [MenuItem("公共框架/Easy Assets/资源分析器", priority = 103)]
         public static void OpenWindow()
         {
             //Definer.Inided();
@@ -27,7 +27,7 @@ namespace EasyAsset
         {
             if (instance == null)
             {
-                instance = CreateWindow<AssetAnalysis>();
+                instance = GetWindow<AssetAnalysis>();
                 instance.Init();
             }
 
@@ -59,7 +59,19 @@ namespace EasyAsset
         AnalysisType analysisType = AnalysisType.正向分析;
 
         bool showIgnore = false;
-        string analysisIgnore = ".meta;.DS_Store";
+        string analysisIgnore = ".meta;.DS_Store;.cs";
+
+        public BaseAnalysis curAnalysis
+        {
+            get
+            {
+                BaseAnalysis ana = backAnalysis;
+                if (analysisType == AnalysisType.正向分析)
+                    ana = forwardAnalysis;
+
+                return ana;
+            }
+        }
 
         private void OnGUI()
         {
@@ -73,9 +85,9 @@ namespace EasyAsset
 
             analysisType = (AnalysisType)EditorGUILayout.EnumPopup("分析类型: ", analysisType);
 
-            BaseAnalysis curAnalysis = backAnalysis;
-            if (analysisType == AnalysisType.正向分析)
-                curAnalysis = forwardAnalysis;
+            //BaseAnalysis curAnalysis = backAnalysis;
+            //if (analysisType == AnalysisType.正向分析)
+            //    curAnalysis = forwardAnalysis;
 
             GUILayout.Space(20);
 
