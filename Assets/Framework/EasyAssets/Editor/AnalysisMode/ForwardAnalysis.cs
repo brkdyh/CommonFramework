@@ -44,29 +44,45 @@ namespace EasyAsset
 
     public class ForwardAnalysis : BaseAnalysis
     {
-        int assetCount = 0;
+        int assetCount = 0;                 //资源计数
 
-        int depCount = 0;
+        int depCount = 0;                   //依赖计数
 
-        Vector2 desViewScrollPos;
-
+        //Scroll Position
+        Vector2 desViewScrollPos;           
         Vector2 detailViewScrollPos;
 
-        string batchAssetBundleName_a;
-        string batchAssetVariant_a;
+        string batchAssetBundleName_a;      //资源项AB包名称
+        string batchAssetVariant_a;         //资源项AB包后缀
 
-        string batchAssetBundleName_b;
-        string batchAssetVariant_b;
+        string batchAssetBundleName_b;      //依赖项AB包名称
+        string batchAssetVariant_b;         //依赖项AB包后缀
 
-        int analysisBatchType = 0;
+        int dpBatchType = 0;        //依赖批处理类型
+        bool getSkip(int type, string assetPath, string assetBundleName)
+        {
+            bool skip = false;
+            if (type == 0)
+                skip = false;
+            else if (type == 1)
+                skip = !common.isCommonDependency(assetPath);
+            else if (type == 2)
+                skip = common.isCommonDependency(assetPath);
+            else if (type == 3)
+                skip = string.IsNullOrEmpty(assetBundleName);
+            else
+                skip = !string.IsNullOrEmpty(assetBundleName);
+            return skip;
+        }
 
-        CommonDependencyAnalysis commonDependency;
+        //公共依赖分析
+        CommonDependencyAnalysis common;
 
         public ForwardAnalysis()
         {
             SetPageIndex("asset", 0);
             SetPageIndex("dep", 0);
-            commonDependency = new CommonDependencyAnalysis();
+            common = new CommonDependencyAnalysis();
         }
 
         public override bool onDrawPage(string id, int index)
@@ -165,7 +181,7 @@ namespace EasyAsset
                         GUILayout.Space(10);
                         EditorGUILayout.LabelField(string.Format("资源依赖项(合计 {0} 项): ", dpd.AppliesCount));
                         GUILayout.FlexibleSpace();
-                        analysisBatchType = GUILayout.Toolbar(analysisBatchType, new string[] { "全部", "公共", "非公共" }, GUILayout.Width(150));
+                        dpBatchType = GUILayout.Toolbar(dpBatchType, new string[] { "全部", "公共", "非公共" ,"有AB标记","无AB标记"}, GUILayout.Width(300));
                         GUILayout.Space(10);
                         GUILayout.EndHorizontal();
                         GUILayout.Space(5);
@@ -182,17 +198,9 @@ namespace EasyAsset
                             {
                                 foreach (var dp in dpd.GetDependencies())
                                 {
-                                    bool skip = false;
-                                    if (analysisBatchType == 0)
-                                        skip = false;
-                                    else if (analysisBatchType == 1)
-                                        skip = !commonDependency.isCommonDependency(dp.Key);
-                                    else
-                                        skip = commonDependency.isCommonDependency(dp.Key);
-
-                                    if (!skip)
+                                    var adp = FindAnalysisData(dp.Key);
+                                    if (!getSkip(dpBatchType, dp.Key, adp.assetData.assetBundleName))
                                     {
-                                        var adp = FindAnalysisData(dp.Key);
                                         adp.assetData.assetBundleName = batchAssetBundleName_b;
                                         adp.assetData.assetBundleVariant = batchAssetVariant_b;
                                         adp.assetData.ApplyAssetBundleName();
@@ -213,20 +221,13 @@ namespace EasyAsset
                         depCount = 0;
                         foreach (var dp in dpd.GetDependencies())
                         {
-                            bool skip = false;
-                            if (analysisBatchType == 0)
-                                skip = false;
-                            else if (analysisBatchType == 1)
-                                skip = !commonDependency.isCommonDependency(dp.Key);
-                            else
-                                skip = commonDependency.isCommonDependency(dp.Key);
-                            if (!skip)
-                            {
-                                var asset = FindAnalysisData(dp.Key).assetData;
+                            var asset = FindAnalysisData(dp.Key).assetData;
 
+                            if (!getSkip(dpBatchType, dp.Key, asset.assetBundleName))
+                            {
                                 if (depCount >= pageIndexMin("dep")
                                     && depCount <= pageMaxIndex("dep"))
-                                    DrawAsset(asset, commonDependency.isCommonDependency(dp.Key) ? Color.green : GUI.contentColor,
+                                    DrawAsset(asset, common.isCommonDependency(dp.Key) ? Color.green : GUI.contentColor,
                                         false, "", true, false);
 
                                 depCount++;
@@ -252,7 +253,7 @@ namespace EasyAsset
 
         public override void Analysis(string[] paths, string[] ignores)
         {
-            commonDependency.Clear();
+            common.Clear();
             base.Analysis(paths, ignores);
         }
 
@@ -271,7 +272,7 @@ namespace EasyAsset
                 if (!IgnorePath(adp))
                 {
                     dp.AddDependencyCount(adp);
-                    commonDependency.RecordDependency(adp, path);
+                    common.RecordDependency(adp, path);
                 }
             }
         }
