@@ -89,13 +89,34 @@ namespace EasyAsset
             if (inited)
                 return;
 
-            var path = PathHelper.EXTERNAL_ASSET_PATH + "buildinscenes";
+            StreamReader sr = null;
+            var path = PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.BUILDIN_SCENES_FILE;
+
             if (!File.Exists(path))
+            {
+                var ta = Resources.Load<TextAsset>(EASY_DEFINE.BUILDIN_SCENES_NAME);
+                if (ta == null)
+                    return;
+                using (MemoryStream ms = new MemoryStream(ta.bytes))
+                {
+                    sr = new StreamReader(ms);
+                    LoadFromStream(sr);
+                    inited = true;
+                    return;
+                }
+            }
+
+            sr = File.OpenText(path);
+            if (sr == null)
                 return;
 
+            LoadFromStream(sr);
             inited = true;
+        }
 
-            using (var sr = File.OpenText(path))
+        static void LoadFromStream(StreamReader sr)
+        {
+            using (sr)
             {
                 sr.ReadLine();
                 while (!sr.EndOfStream)
@@ -607,7 +628,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     public static bool Init()
     {
-        Instance.externalAssetList = AssetList.CreateAssetList(PathHelper.EXTERNAL_ASSET_PATH + "assetlist");
+        Instance.externalAssetList = AssetList.CreateAssetList(PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.ASSET_LIST_FILE);
 
         if (Instance.externalAssetList == null)
         {

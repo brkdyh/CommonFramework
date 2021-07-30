@@ -1,14 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
-using EasyAsset.EditorCoroutines;
-using System;
 
 namespace EasyAsset
 {
-    public static class Definer
+    public static class EditorDefiner
     {
         static bool inited = false;
 
@@ -38,6 +36,7 @@ namespace EasyAsset
             }
         }
     }
+
 
     /// <summary>
     /// 资源数据
