@@ -15,5 +15,9 @@ namespace EasyAsset
         public float DisposeCacheTime = 5f;
         [HideInInspector]
         public float AssetBundleLiveTime = 5f;
+        [HideInInspector]
+        public string RemoteBundleInfoUrl;
+        [HideInInspector]
+        public string RemoteBundleBaseUrl;
     }
 }

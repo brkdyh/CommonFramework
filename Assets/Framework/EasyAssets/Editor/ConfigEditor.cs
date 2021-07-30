@@ -17,21 +17,27 @@ namespace EasyAsset
             base.OnInspectorGUI();
 
             EasyAssetConfig config = target as EasyAssetConfig;
+
             GUILayout.Space(5);
-            config.LoadPath =  EditorGUILayout.TextField("外部资源加载路径:", config.LoadPath);
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("资源管理器设置:", EA_GUIStyle.mid_label);
+            GUILayout.Space(5);
+            config.LoadPath = EditorGUILayout.TextField("外部资源加载路径:", config.LoadPath);
 
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
             f1 = EditorGUILayout.Foldout(f1, "AssetBundle卸载时间:");
             GUILayout.Space(20);
             config.AssetBundleLiveTime = EditorGUILayout.FloatField("", config.AssetBundleLiveTime);
             GUILayout.EndHorizontal();
             if (f1)
                 EditorGUILayout.HelpBox(string.Format("这是已加载的 \"AssetBundle\" 对象的存活时间，" +
-                    "已经加载并且使用过的 AssetBundle 对象会在 {0}s 后自动卸载。",config.AssetBundleLiveTime), MessageType.Info);
+                    "已经加载并且使用过的 AssetBundle 对象会在 {0}s 后自动卸载。", config.AssetBundleLiveTime), MessageType.Info);
 
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
             f2 = EditorGUILayout.Foldout(f2, "Bundle引用检测频率:");
             GUILayout.Space(20);
             config.RefrenceCheckTime = EditorGUILayout.FloatField("", config.RefrenceCheckTime);
@@ -41,6 +47,7 @@ namespace EasyAsset
 
             GUILayout.Space(5);
             GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
             f3 = EditorGUILayout.Foldout(f3, "Bundle废弃缓存时间:");
             GUILayout.Space(20);
             config.DisposeCacheTime = EditorGUILayout.FloatField("", config.DisposeCacheTime);
@@ -48,6 +55,19 @@ namespace EasyAsset
             if (f3)
                 EditorGUILayout.HelpBox(string.Format("当释放Bundle对象时，该对象会进入废弃缓冲池，并在 {0}s 后真正释放并销毁。", config.DisposeCacheTime), MessageType.Info);
 
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+            GUILayout.BeginVertical("box");
+
+            GUILayout.Label("资源下载设置:", EA_GUIStyle.mid_label);
+            GUILayout.Space(5);
+
+            config.RemoteBundleInfoUrl = EditorGUILayout.TextField("Bunlde Info 文件的Url:", config.RemoteBundleInfoUrl);
+            GUILayout.Space(5);
+            config.RemoteBundleBaseUrl = EditorGUILayout.TextField("服务器Bundle文件根路径的Url:", config.RemoteBundleBaseUrl);
+
+            GUILayout.EndVertical();
             if (GUI.changed)
             {
                 EditorUtility.SetDirty(target);

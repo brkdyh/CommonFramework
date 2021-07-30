@@ -43,10 +43,18 @@ public class UpdateBundle
 {
     public string bundleName { get; private set; } = "";
     public string md5 { get; private set; } = "";
+    public string url { get; private set; } = "";
+    public bool couldDownload { get { return url != ""; } }
+
     public UpdateBundle(string bundleName, string md5)
     {
         this.bundleName = bundleName;
         this.md5 = md5;
+    }
+
+    public void SetUrl(string url)
+    {
+        this.url = url;
     }
 }
 

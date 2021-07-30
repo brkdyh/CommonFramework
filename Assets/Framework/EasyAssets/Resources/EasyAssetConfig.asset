@@ -16,3 +16,5 @@ MonoBehaviour:
   RefrenceCheckTime: 1
   DisposeCacheTime: 5
   AssetBundleLiveTime: 5
+  RemoteBundleInfoUrl: 
+  RemoteBundleBaseUrl: 
