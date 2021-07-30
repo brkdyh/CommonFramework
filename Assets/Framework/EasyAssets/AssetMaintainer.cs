@@ -343,6 +343,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         if (disposePool.ContainsKey(bundleName))
         {
             var bundle = disposePool[bundleName];
+            bundle.Restore();
             return bundle;
         }
 

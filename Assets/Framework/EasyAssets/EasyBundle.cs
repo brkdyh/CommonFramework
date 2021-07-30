@@ -119,7 +119,6 @@ namespace EasyAsset
             if (!disposed)
                 return;
             disposed = false;
-            Debug.Log("Resotre!");
         }
 
         //强制释放
