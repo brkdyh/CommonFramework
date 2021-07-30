@@ -75,6 +75,7 @@ namespace EasyAsset
                 bundle = request.assetBundle;
                 whenLoaded = Time.realtimeSinceStartup;
                 used = false;
+                ExternalReqeuestPool.Instance.DisposeRequest(request);
                 Debug.Log("Loaded " + bundleName + " : " + bundle);
             }
         }
@@ -109,6 +110,8 @@ namespace EasyAsset
                 return;
             disposed = true;
             disposedAt = Time.realtimeSinceStartup;
+
+            Debug.Log("Dispose Bundle : " + bundleName);
         }
 
         //重用
@@ -119,6 +122,7 @@ namespace EasyAsset
             if (!disposed)
                 return;
             disposed = false;
+            Debug.Log("Resotre Bundle : " + bundleName);
         }
 
         //强制释放
