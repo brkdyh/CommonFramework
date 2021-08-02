@@ -12,10 +12,12 @@ namespace EasyAsset
     public static class Setting
     {
         public static EasyAssetConfig config { get; private set; }
-        public static string LoadPath { get; set; }
+        public static string LoadPath { get; private set; }
         public static float DisposeCacheTime { get; private set; } = 5f;
         public static float RefrenceCheckTime { get; private set; } = 1f;
         public static float AssetBundleLiveTime { get; private set; } = 5f;
+
+        public static string RemoteRootUrl { get; private set; }
 
         static bool inited = false;
         public static void InitSetting()
@@ -27,6 +29,9 @@ namespace EasyAsset
             DisposeCacheTime = config.DisposeCacheTime;
             RefrenceCheckTime = config.RefrenceCheckTime;
             AssetBundleLiveTime = config.AssetBundleLiveTime;
+
+            RemoteRootUrl = config.RemoteBundleRootUrl;
+
             inited = true;
         }
     }

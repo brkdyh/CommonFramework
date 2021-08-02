@@ -15,7 +15,26 @@ namespace EasyAsset
 
         UnityWebRequest webRequest;
 
-        public bool isDone { get { return webRequest == null ? false : webRequest.isDone; } }
+        public bool isDone
+        {
+            get
+            {
+                if (webRequest != null)
+                {
+                    //更新下载速度
+                    if (Time.realtimeSinceStartup - _lastCalSpeedTime >= 1f)
+                    {
+                        _lastCalSpeedTime = Time.realtimeSinceStartup;
+                        downloadSpeed = webRequest.downloadedBytes - _lastCacheDownloadBytes;
+                        _lastCacheDownloadBytes = webRequest.downloadedBytes;
+                    }
+
+                    return webRequest.isDone;
+                }
+
+                return false;
+            }
+        }
 
         public bool isError { get { return webRequest == null ? false : webRequest.isNetworkError; } }
 
@@ -23,11 +42,16 @@ namespace EasyAsset
 
         public float progress { get { return webRequest == null ? 0f : webRequest.downloadProgress; } }
 
+        ulong _lastCacheDownloadBytes;
+        float _lastCalSpeedTime = 0;
+        public ulong downloadSpeed { get; private set; } = 0;
+
         public void BeginDownload()
         {
             webRequest = new UnityWebRequest(url);
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.SendWebRequest();
+            Debug.Log("开始下载: " + bundleName + "\n" + url);
         }
 
         public byte[] data

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EasyAsset;
 using System;
+using System.IO;
 
 public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 {
@@ -10,71 +11,104 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 
     Queue<BundleDownloadRequest> reqQueue = new Queue<BundleDownloadRequest>();
 
-    Dictionary<string, BundleDownloadRequest> finishRequest = new Dictionary<string, BundleDownloadRequest>();
+    public ulong downloadSpeed { get { return currentRequest == null ? 0 : currentRequest.downloadSpeed; } }
 
     public float downloadProgress { get; private set; } = 0;
 
-    public bool isDownloading { get; private set; } = false;
+    public bool isDownloading
+    {
+        get
+        {
+            return currentStatus == Status.Downloading
+                || currentStatus == Status.Writing
+                || currentStatus == Status.CheckNext
+                || currentStatus == Status.Pause;
+        }
+    }
 
-    public bool isPause { get; private set; } = false;
+    public enum Status
+    {
+        Idle,
+        Downloading,
+        Writing,
+        CheckNext,
+        Pause,
+        TimeOut,
+        Error,
+    }
+
+    public Status currentStatus = Status.Idle;
 
     public int currentStep { get; private set; } = 0;
     public int totalStep { get; private set; } = 1;
+
+    public FileStream curFile;
 
     void TickDownload()
     {
         if (!isDownloading)
             return;
 
-        if (isPause)
+        if (currentStatus == Status.Pause)
             return;
+
+        if (currentStatus == Status.Writing)
+            return;
+
+        if (currentStatus == Status.CheckNext)
+        {//检测下一项
+            if (reqQueue.Count <= 0)
+            {//下载已经全部完成
+                if (currentRequest != null)
+                    currentRequest.Dispose();
+                currentRequest = null;
+                currentStatus = Status.Idle;
+
+                try
+                {
+                    onFinishCB?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+
+                return;
+            }
+
+            //继续下载
+            currentStep++;
+            currentStatus = Status.Downloading;
+            currentRequest = reqQueue.Dequeue();
+            currentRequest.BeginDownload();
+        }
 
         if (currentRequest != null)
         {
-            if(currentRequest.isError)
+            if (currentRequest.isError)
             {
                 Debug.LogErrorFormat("{0} DownLoad Error ,code = {1},url = {2}",
                     currentRequest.bundleName, currentRequest.error, currentRequest.url);
-
-                isPause = true;
+                currentStatus = Status.Pause;
                 return;
             }
 
             if (currentRequest.isDone)
             {//当前下载已经完成
-                if (!finishRequest.ContainsKey(currentRequest.bundleName))
-                    finishRequest.Add(currentRequest.bundleName, currentRequest);
+                Debug.Log("完成下载: " + currentRequest.bundleName);
 
-                if (reqQueue.Count <= 0)
-                {//下载已经全部完成
-                    currentRequest = null;
-                    isDownloading = false;
-
-                    try
-                    {
-                        onFinishCB?.Invoke(finishRequest);
-                    }
-                    catch(Exception ex)
-                    {
-                        Debug.LogException(ex);
-                    }
-
-                    //废弃所有网络请求,释放内存
-                    foreach(var req in finishRequest)
-                    {
-                        req.Value.Dispose();
-                    }
-                    finishRequest.Clear();
-                    return;
-                }
-
-                currentStep++;
-                currentRequest = reqQueue.Dequeue();
-                currentRequest.BeginDownload();
+                currentStatus = Status.Writing;
+                //开始写入文件
+                var path = PathHelper.EXTERNAL_ASSET_PATH + currentRequest.bundleName;
+                if (File.Exists(path))
+                    File.Delete(path);
+                curFile = File.Create(path);
+                curFile.BeginWrite(currentRequest.data, 0, currentRequest.data.Length, onWriteFile, null);
+                Debug.Log("开始写入文件 : " + currentRequest.bundleName + "\n at " + path);
             }
             else
             {//更新下载进度
-                downloadProgress = (currentStep + currentRequest.progress) / totalStep;
+                downloadProgress = (currentStep + Mathf.Min(0.99f, currentRequest.progress)) / totalStep;
                 try
                 {
                     onProgressCB?.Invoke(downloadProgress);
@@ -87,16 +121,30 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
         }
     }
 
+    void onWriteFile(object obj)
+    {
+        //写入完成，释放资源
+        curFile.Flush();
+        curFile.Close();
+        curFile = null;
+
+        Debug.Log("完成写入文件 : " + currentRequest.bundleName);
+        currentRequest.Dispose();
+        currentRequest = null;
+
+        currentStatus = Status.CheckNext;//检测下一项
+    }
+
     private void Update()
     {
         TickDownload();
     }
 
     Action<float> onProgressCB;
-    Action<Dictionary<string, BundleDownloadRequest>> onFinishCB;
+    Action onFinishCB;
 
-    public bool DownloadBundles(List<UpdateBundle> updateBundles,
-        Action<Dictionary<string, BundleDownloadRequest>> onFinish, Action<float> onProgress = null)
+    private bool DownloadBundles_Internal(List<UpdateBundle> updateBundles,
+        Action onFinish, Action<float> onProgress = null)
     {
         if (isDownloading)
             return false;
@@ -113,12 +161,23 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 
         onFinishCB = onFinish;
         onProgressCB = onProgress;
-        isDownloading = true;
-        isPause = false;
 
         //开始下载
+        currentStatus = Status.Downloading;
         currentRequest = reqQueue.Dequeue();
         currentRequest.BeginDownload();
         return true;
+    }
+
+    public static bool DownloadBundle(UpdateBundle bundle, Action onFinish, Action<float> onProgress = null)
+    {
+        return Instance.DownloadBundles_Internal(new List<UpdateBundle>() { bundle }, onFinish, onProgress);
+    }
+
+    public static bool DownloadBundles(List<UpdateBundle> updateBundles,
+        Action onFinish, Action<float> onProgress = null)
+    {
+        return Instance.DownloadBundles_Internal(updateBundles, onFinish, onProgress);
+
     }
 }
