@@ -17,7 +17,7 @@ namespace EasyAsset
         public static float RefrenceCheckTime { get; private set; } = 1f;
         public static float AssetBundleLiveTime { get; private set; } = 5f;
 
-        public static string RemoteRootUrl { get; private set; }
+        public static string RemoteRootDomain { get; private set; }
 
         static bool inited = false;
         public static void InitSetting()
@@ -30,7 +30,7 @@ namespace EasyAsset
             RefrenceCheckTime = config.RefrenceCheckTime;
             AssetBundleLiveTime = config.AssetBundleLiveTime;
 
-            RemoteRootUrl = config.RemoteBundleRootUrl;
+            RemoteRootDomain = config.RemoteBundleRootDomain;
 
             inited = true;
         }
