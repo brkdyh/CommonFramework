@@ -53,7 +53,7 @@ namespace EasyAsset
         public string buildRootPath = "";
         public string buildPath { get { return buildRootPath + "/" + buildVersion; } }
         bool copyToPersistentPath = false;
-        string buildVersion = "0.0.1(0)";
+        string buildVersion = "0.0.1_0";
 
         string version;
         int buildNumber;
@@ -83,7 +83,7 @@ namespace EasyAsset
             buildNumber = EditorGUILayout.IntField("构建Build号:", buildNumber);
             GUILayout.Space(10);
             if (GUI.changed)
-                buildVersion = version + "(" + buildNumber + ")";
+                buildVersion = version + "_" + buildNumber;
             GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
