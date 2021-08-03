@@ -27,5 +27,14 @@ namespace EasyAsset
             }
             return str;
         }
+
+        public static long GetFileSize(string filePath)
+        {
+            FileInfo fi = new FileInfo(filePath);
+            if (fi.Exists)
+                return fi.Length;
+
+            return 0;
+        }
     }
 }

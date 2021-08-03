@@ -18,6 +18,7 @@ namespace EasyAsset
         public static float AssetBundleLiveTime { get; private set; } = 5f;
 
         public static string RemoteRootDomain { get; private set; }
+        public static float RequestTimeOut { get; private set; }
 
         static bool inited = false;
         public static void InitSetting()
@@ -31,6 +32,7 @@ namespace EasyAsset
             AssetBundleLiveTime = config.AssetBundleLiveTime;
 
             RemoteRootDomain = config.RemoteBundleRootDomain;
+            RequestTimeOut = config.RequestTimeOut;
 
             inited = true;
         }

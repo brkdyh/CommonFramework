@@ -63,6 +63,8 @@ namespace EasyAsset
             GUILayout.Label("资源下载设置:", EA_GUIStyle.mid_label);
             GUILayout.Space(5);
             config.RemoteBundleRootDomain = EditorGUILayout.TextField("服务器Bundle文件根路径:", config.RemoteBundleRootDomain);
+            GUILayout.Space(5);
+            config.RequestTimeOut = EditorGUILayout.FloatField("下载请求超时时间(单位 s):", config.RequestTimeOut);
 
             GUILayout.EndVertical();
             if (GUI.changed)

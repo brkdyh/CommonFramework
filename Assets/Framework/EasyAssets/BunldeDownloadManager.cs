@@ -7,6 +7,19 @@ using System.IO;
 
 public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 {
+    public enum Status
+    {
+        Idle,
+        Downloading,
+        Writing,
+        CheckNext,
+        Pause,
+
+        UnknowError,
+    }
+
+    public Status currentStatus = Status.Idle;
+
     BundleDownloadRequest currentRequest;
 
     Queue<BundleDownloadRequest> reqQueue = new Queue<BundleDownloadRequest>();
@@ -26,18 +39,11 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
         }
     }
 
-    public enum Status
-    {
-        Idle,
-        Downloading,
-        Writing,
-        CheckNext,
-        Pause,
-        TimeOut,
-        Error,
-    }
+    public long totalbytes { get; private set; } = 0;
 
-    public Status currentStatus = Status.Idle;
+    long _lastFinishDownBytes = 0;
+    long _curDownBytes = 0;
+    public long downloadbytes { get { return _lastFinishDownBytes + _curDownBytes; } }
 
     public int currentStep { get; private set; } = 0;
     public int totalStep { get; private set; } = 1;
@@ -90,6 +96,14 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
                 Debug.LogErrorFormat("{0} DownLoad Error ,code = {1},url = {2}",
                     currentRequest.bundleName, currentRequest.error, currentRequest.url);
                 currentStatus = Status.Pause;
+                try
+                {//调用下载错误回调
+                    onDownloadErrorCB?.Invoke(currentRequest);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
                 return;
             }
 
@@ -103,6 +117,8 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
                     return;
                 }
 
+                _lastFinishDownBytes += (long)currentRequest.downloadSize;
+                _curDownBytes = 0;
                 Debug.Log("完成下载: " + currentRequest.bundleName);
 
                 currentStatus = Status.Writing;
@@ -116,7 +132,8 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
             }
             else
             {//更新下载进度
-                downloadProgress = (currentStep + Mathf.Min(0.99f, currentRequest.progress)) / totalStep;
+                downloadProgress = (currentStep + currentRequest.progress) / totalStep;
+                _curDownBytes = (long)currentRequest._lastCacheDownloadBytes;
                 try
                 {
                     onProgressCB?.Invoke(downloadProgress);
@@ -151,15 +168,25 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
     Action<float> onProgressCB;
     Action onFinishCB;
 
+    Action<BundleDownloadRequest> onDownloadErrorCB;
+    internal static void AddDownloadErrorHandler(Action<BundleDownloadRequest> downloadErrorCB)
+    { Instance.onDownloadErrorCB += downloadErrorCB; }
+    internal static void ClearDownloadHandler() { Instance.onDownloadErrorCB = null; }
+
     private bool DownloadBundles_Internal(List<UpdateBundle> updateBundles,
         Action onFinish, Action<float> onProgress = null)
     {
         if (isDownloading)
             return false;
 
+        totalbytes = 0;
+        _lastFinishDownBytes = 0;
+        _curDownBytes = 0;
+
         reqQueue.Clear();
         foreach (var ub in updateBundles)
         {
+            totalbytes += ub.bundleSize;
             var req = BundleDownloadRequest.CreateRequest(ub);
             reqQueue.Enqueue(req);
         }
@@ -187,5 +214,17 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
     {
         return Instance.DownloadBundles_Internal(updateBundles, onFinish, onProgress);
 
+    }
+
+    /// <summary>
+    /// 重置当前下载请求状态，可以重新开始下载。
+    /// </summary>
+    public static void ResetCurrentRequest()
+    {
+        if (Instance.currentRequest != null)
+        {
+            Instance.currentRequest.Reset();
+            Instance.currentStatus = Status.Downloading;
+        }
     }
 }

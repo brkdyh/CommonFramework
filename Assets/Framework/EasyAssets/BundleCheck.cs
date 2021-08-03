@@ -10,10 +10,26 @@ namespace EasyAsset
 {
     public class BundleInfo
     {
-        public string buildVersion { get; private set; } = "0.0.0.0";
+        public class BundleInfoData
+        {
+            public string bundleName { get; private set; }
+            public string bundleMD5 { get; private set; }
+            public long bundleSize { get; private set; }
+
+            public BundleInfoData(string name, string md5, long size)
+            {
+                bundleName = name;
+                bundleMD5 = md5;
+                bundleSize = size;
+            }
+        }
+        public string buildVersion { get; private set; } = "0.0.1(0)";
 
         //bundle name <=> md5 映射
-        public Dictionary<string, string> bundles = new Dictionary<string, string>();
+        public Dictionary<string, BundleInfoData> bundles = new Dictionary<string, BundleInfoData>();
+
+        public long totalFileSize { get; private set; } = 0;
+        public int totalFileCount { get; private set; } = 0;
 
         public void LoadBundleInfo(StreamReader sr)
         {
@@ -27,12 +43,27 @@ namespace EasyAsset
                 while (!sr.EndOfStream)
                 {
                     var line = sr.ReadLine();
-                    var sps = line.Split(':');
-                    var bundleName = sps[0];
-                    var md5 = sps[1];
 
-                    if (!bundles.ContainsKey(bundleName))
-                        bundles.Add(bundleName, md5);
+                    if (line.StartsWith("#"))
+                    {
+                        var sps = line.Split(':');
+                        if (sps[0] == "total_file_size")
+                            totalFileSize = long.Parse(sps[1]);
+                        else if (sps[1] == "total_file_count")
+                            totalFileCount = int.Parse(sps[1]);
+                    }
+                    else
+                    {
+                        var sps = line.Split(':');
+                        var bundleName = sps[0];
+                        var md5 = sps[1];
+                        long size = 0;
+                        if (sps.Length > 2)
+                            size = long.Parse(sps[2]);
+                        BundleInfoData data = new BundleInfoData(bundleName, md5, size);
+                        if (!bundles.ContainsKey(bundleName))
+                            bundles.Add(bundleName, data);
+                    }
                 }
             }
         }
@@ -46,11 +77,13 @@ namespace EasyAsset
         public string url { get; private set; } = "";
         public bool couldDownload { get { return url != ""; } }
         public bool enableCheck { get; private set; } = true;
+        public long bundleSize { get; private set; } = 0;
 
-        public UpdateBundle(string bundleName, string md5)
+        public UpdateBundle(string bundleName, string md5, long bundleSize)
         {
             this.bundleName = bundleName;
             this.md5 = md5;
+            this.bundleSize = bundleSize;
         }
 
         public void SetUrl(string url)
@@ -73,7 +106,7 @@ namespace EasyAsset
     {
         Succeed = 0,
         DownloadError,
-        TimeOut,
+        OtherError,
     }
 
     public class BundleCheck : Singleton<BundleCheck>
@@ -94,7 +127,7 @@ namespace EasyAsset
         BundleInfo LoadBundleInfo(byte[] data)
         {
             if (data == null)
-                return null;
+                throw (new Exception("Bundle Info Data is Null"));
 
             var bundleInfo = new BundleInfo();
 
@@ -106,6 +139,8 @@ namespace EasyAsset
 
             return bundleInfo;
         }
+
+        public bool inChecking { get; private set; }
 
         #region 本地
 
@@ -135,79 +170,108 @@ namespace EasyAsset
             {
                 var bundlePath = PathHelper.EXTERNAL_ASSET_PATH + bundle.Key;
                 if (!File.Exists(bundlePath))
-                {
-                    list.Add(new UpdateBundle(bundle.Key, bundle.Value));
-                    Debug.LogFormat("Need Update Bundle (name = {0},ms5 = {1})", bundle.Key, bundle.Value);
+                {//不存在文件，直接添加到更新列表
+                    list.Add(new UpdateBundle(bundle.Key, bundle.Value.bundleMD5, bundle.Value.bundleSize));
+                    //Debug.LogFormat("Need Update Bundle (name = {0},ms5 = {1})", bundle.Key, bundle.Value);
+                }
+                else
+                {//存在文件，验证文件尺寸
+                    long size = Utils.GetFileSize(bundlePath);
+                    if (size != bundle.Value.bundleSize)
+                        list.Add(new UpdateBundle(bundle.Key, bundle.Value.bundleMD5, bundle.Value.bundleSize));
                 }
             }
             return list;
         }
 
+        /// <summary>
+        /// 验证本地文件完整性
+        /// </summary>
+        /// <returns></returns>
+        public static bool VerifyIntegrity()
+        {
+            return GetUpdateListByLocal().Count <= 0;
+        }
 
+        /// <summary>
+        /// 从本地BundleInfo检测是否需要更新
+        /// </summary>
+        /// <param name="onUpdateFinish">更新完成回调</param>
+        /// <param name="onDownloadProgress">下载进度回调</param>
+        /// <returns>是否需要更新</returns>
+        public static bool CheckUpdateFromLocal(
+            Action onUpdateFinish,
+            Action<float> onDownloadProgress = null)
+        {
+            if (Instance.inChecking)
+                return false;
+
+            Instance.onUpdateFinishCB = onUpdateFinish;
+            var updateList = GetUpdateListByLocal();
+            if (updateList.Count <= 0)
+            {
+                Debug.Log("当前无需更新");
+                Instance.InvokeUpdateFinish();
+                return false;
+            }
+
+            //开始下载
+            BundleDownloadManager.DownloadBundles(updateList, Instance.OnDownloadBundleFinish, onDownloadProgress);
+            return true;
+        }
 
         #endregion
 
         #region 远程
 
         public BundleInfo remoteBundleInfo;
-        Action onUpdateFinishCB;
-        Action<BundleCheckResult> onCheckFinishCB;
-        Action<float> onDownloadProgressCB;
-
-        void LoadRemoteBundleInfo(byte[] data)
-        {
-            remoteBundleInfo = LoadBundleInfo(data);
-        }
 
         //远程 bundle info 下载完成
         void onDownloadBundleInfo()
         {
-            //var req = downloads[EASY_DEFINE.BUNDLE_INFO_FILE];
-            var data = File.ReadAllBytes(PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.BUNDLE_INFO_FILE);
-            LoadRemoteBundleInfo(data);
-            if (remoteBundleInfo == null)
-            {
-                Debug.LogError("无法获取远程服务器上的BundleInfo,该文件内容为空!");
-                onCheckFinishCB?.Invoke(BundleCheckResult.DownloadError);
-                onUpdateFinishCB?.Invoke();
-                return;
-            }
-
-            var updateList = GetUpdateListByRemote();
-            if (updateList.Count <= 0)
-            {
-                try
-                {
-                    onCheckFinishCB?.Invoke(BundleCheckResult.Succeed);
-                    Debug.Log("当前无需更新");
-                    onUpdateFinishCB?.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex);
-                }
-                return;
-            }
-
+            List<UpdateBundle> updateList = new List<UpdateBundle>();
             try
             {
-                onCheckFinishCB?.Invoke(BundleCheckResult.Succeed);
+                var data = File.ReadAllBytes(PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.BUNDLE_INFO_FILE);
+                remoteBundleInfo = LoadBundleInfo(data);
+
+                updateList = GetUpdateListByRemote();
+                Debug.Log(updateList.Count);
+                if (updateList.Count <= 0)
+                {
+                    Debug.Log("当前无需更新");
+                    InvokeCheckFinish(BundleCheckResult.Succeed);
+                    InvokeUpdateFinish();
+                    return;
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                InvokeCheckFinish(BundleCheckResult.OtherError);
+                return;
             }
 
+            InvokeCheckFinish(BundleCheckResult.Succeed);
             BundleDownloadManager.DownloadBundles(updateList, OnDownloadBundleFinish, onDownloadProgressCB);
         }
 
-        static UpdateBundle CreateDownloadBundle(string bundleName, string md5)
+        //远程 bundle info 下载失败
+        void onDownloadBundleInfoError(BundleDownloadRequest request)
         {
-            var ub = new UpdateBundle(bundleName, md5);
-            ub.CombineUrl(RemoteUrlBaseVersion(Instance.remoteBundleInfo.buildVersion));
-            return ub;
+            try
+            {
+                onCheckFinishCB?.Invoke(BundleCheckResult.DownloadError);
+            }
+            catch(Exception ex)
+            {
+                Debug.LogError(ex);
+            }
+
+            inChecking = false;
         }
 
+        //从远程bundle info中获得需要更新的文件
         static List<UpdateBundle> GetUpdateListByRemote()
         {
             List<UpdateBundle> updateBundles = new List<UpdateBundle>();
@@ -226,45 +290,50 @@ namespace EasyAsset
                 var local_file_path = PathHelper.EXTERNAL_ASSET_PATH + rm_bd.Key;
                 if (!File.Exists(local_file_path))
                 {//若本地无文件，直接加入下载列表
-                    updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value));
+                    updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value.bundleMD5, rm_bd.Value.bundleSize));
                     continue;
                 }
 
-                if (local_info.bundles.ContainsKey(rm_bd.Key))
-                {//若已有文件记录，则比对文件md5值，不一样的加入更新列表
-                    var local_md5 = local_info.bundles[rm_bd.Key];
-                    if (local_md5 != rm_bd.Value)
-                        updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value));
-                }
-                else
-                {//若无文件记录,检测本地有无该文件
-                    if (File.Exists(local_file_path))
-                    {//若本地存在文件，比对一下md5值
-                        var local_md5 = Utils.GetMD5(local_file_path);
-                        if (local_md5 != rm_bd.Value)
-                            updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value));
-                    }
-                }
+                //若本地存在文件，比对一下md5值
+                var local_md5 = Utils.GetMD5(local_file_path);
+                if (local_md5 != rm_bd.Value.bundleMD5)
+                    updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value.bundleMD5, rm_bd.Value.bundleSize));
             }
-
             return updateBundles;
         }
 
+        /// <summary>
+        /// 从远程服务器检测是否需要更新
+        /// </summary>
+        /// <param name="version">远程版本号</param>
+        /// <param name="onCheckFinish">检测结果回调</param>
+        /// <param name="onUpdateFinish">更新完成回调</param>
+        /// <param name="onDownloadProgress">下载进度回调</param
         public static void CheckUpdateFromRemote(
             string version,
             Action<BundleCheckResult> onCheckFinish,
             Action onUpdateFinish,
             Action<float> onDownloadProgress = null)
         {
-            UpdateBundle remote_bundleInfo = new UpdateBundle(EASY_DEFINE.BUNDLE_INFO_FILE, "");
+            if (Instance.inChecking)
+                return;
+            UpdateBundle remote_bundleInfo = new UpdateBundle(EASY_DEFINE.BUNDLE_INFO_FILE, "", 0);
             remote_bundleInfo.EnableCheck(false);
             remote_bundleInfo.CombineUrl(RemoteUrlBaseVersion(version));
             Instance.onCheckFinishCB = onCheckFinish;
             Instance.onUpdateFinishCB = onUpdateFinish;
             Instance.onDownloadProgressCB = onDownloadProgress;
+            BundleDownloadManager.ClearDownloadHandler();
+            BundleDownloadManager.AddDownloadErrorHandler(Instance.onDownloadBundleInfoError);
             BundleDownloadManager.DownloadBundle(remote_bundleInfo, Instance.onDownloadBundleInfo);
         }
 
+        /// <summary>
+        /// 从远程服务器检测是否需要更新
+        /// </summary>
+        /// <param name="onCheckFinish">检测结果回调</param>
+        /// <param name="onUpdateFinish">更新完成回调</param>
+        /// <param name="onDownloadProgress">下载进度回调</param>
         public static void CheckUpdateFromRemote(
             Action<BundleCheckResult> onCheckFinish,
             Action onUpdateFinish,
@@ -274,15 +343,13 @@ namespace EasyAsset
             CheckUpdateFromRemote(buildVerion, onCheckFinish, onUpdateFinish, onDownloadProgress);
         }
 
-        static string RemoteUrlBaseVersion(string version)
-        {
-            return Setting.RemoteRootDomain + "/" + version;
-        }
+        #endregion
 
-        void OnDownloadBundleFinish()
+        Action onUpdateFinishCB;                        //更新完成回调
+        Action<BundleCheckResult> onCheckFinishCB;      //检测完成回调
+        Action<float> onDownloadProgressCB;             //下载进度回调
+        void InvokeUpdateFinish()
         {
-            //Debug.Log("OnDownloadBundleFinish , Total Count = " + downloads.Count);
-            //StartWriteFiles(downloads.Values.GetEnumerator());
             try
             {
                 onUpdateFinishCB?.Invoke();
@@ -292,101 +359,40 @@ namespace EasyAsset
                 Debug.LogException(ex);
             }
         }
+        void InvokeCheckFinish(BundleCheckResult result)
+        {
+            try
+            {
+                onCheckFinishCB?.Invoke(result);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
 
-        #endregion
+        //创建下载包
+        static UpdateBundle CreateDownloadBundle(string bundleName, string md5, long bundleSize)
+        {
+            var ub = new UpdateBundle(bundleName, md5, bundleSize);
+            ub.CombineUrl(RemoteUrlBaseVersion(Instance.remoteBundleInfo.buildVersion));
+            return ub;
+        }
 
-        //#region 文件写入
+        //远程URL基地址
+        static string RemoteUrlBaseVersion(string version)
+        {
+            return Setting.RemoteRootDomain + "/" + version;
+        }
 
-        //void StartWriteFiles(IEnumerator<BundleDownloadRequest> requests)
-        //{
-        //    if (writeStart)
-        //        return;
-
-        //    //将下载文件写入本地
-        //    WriteFiles.Clear();
-        //    while (requests.MoveNext())
-        //    {
-        //        WriteFiles.Push(requests.Current);
-        //        Debug.Log("添加到文件写入列表: " + requests.Current.bundleName);
-        //    }
-
-        //    writeStart = true;
-        //}
-
-        //void TickWrite()
-        //{
-        //    if (!writeStart)
-        //        return;
-
-        //    if (inFileWriting)
-        //        return;
-
-        //    if (WriteFiles.Count <= 0)
-        //    {
-        //        OnWriteAllFile();
-        //        return;
-        //    }
-
-        //    BeginWriteFile();
-        //}
-
-        ////开始写入文件
-        //void BeginWriteFile()
-        //{
-        //    if (WriteFiles.Count > 0)
-        //    {
-        //        try
-        //        {
-        //            inFileWriting = true;
-        //            curWriteReq = WriteFiles.Pop();
-        //            var path = PathHelper.EXTERNAL_ASSET_PATH + curWriteReq.bundleName;
-        //            if (File.Exists(path))
-        //                File.Delete(path);
-        //            curFile = File.Create(path);
-        //            curFile.BeginWrite(curWriteReq.data, 0, curWriteReq.data.Length, onWriteFile, null);
-        //            Debug.Log("开始写入 " + path);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Debug.LogException(ex);
-        //        }
-        //    }
-        //}
-
-        ////完成文件写入
-        //void onWriteFile(object obj)
-        //{
-        //    Debug.Log("完成写入 " + curWriteReq.bundleName);
-        //    curFile.Flush();
-        //    curFile.Close();
-        //    curFile = null;
-        //    curWriteReq.Dispose();
-        //    curWriteReq = null;
-
-        //    inFileWriting = false;
-
-        //}
-
-        ////完成全部文件写入
-        //void OnWriteAllFile()
-        //{
-        //    writeStart = false;
-
-        //    try
-        //    {
-        //        onUpdateFinishCB?.Invoke();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Debug.LogException(ex);
-        //    }
-        //}
-
-        //#endregion
-
-        //private void Update()
-        //{
-        //    TickWrite();
-        //}
+        //下载bundle完成
+        void OnDownloadBundleFinish()
+        {
+            InvokeUpdateFinish();
+            onCheckFinishCB = null;
+            onDownloadProgressCB = null;
+            onUpdateFinishCB = null;
+            inChecking = true;
+        }
     }
 }
