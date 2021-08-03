@@ -47,6 +47,8 @@ namespace EasyAsset
                 return;
             inited = true;
             EXTERNAL_ASSET_PATH = Application.persistentDataPath + path + "/";
+            if (!Directory.Exists(EXTERNAL_ASSET_PATH))
+                Directory.CreateDirectory(EXTERNAL_ASSET_PATH);
         }
     }
 

@@ -45,6 +45,7 @@ namespace EasyAsset
         public string md5 { get; private set; } = "";
         public string url { get; private set; } = "";
         public bool couldDownload { get { return url != ""; } }
+        public bool enableCheck { get; private set; } = true;
 
         public UpdateBundle(string bundleName, string md5)
         {
@@ -60,6 +61,11 @@ namespace EasyAsset
         public void CombineUrl(string root_url)
         {
             this.url = root_url + "/" + bundleName;
+        }
+
+        public void EnableCheck(bool enable)
+        {
+            enableCheck = enable;
         }
     }
 
@@ -251,6 +257,7 @@ namespace EasyAsset
             Action<float> onDownloadProgress = null)
         {
             UpdateBundle remote_bundleInfo = new UpdateBundle(EASY_DEFINE.BUNDLE_INFO_FILE, "");
+            remote_bundleInfo.EnableCheck(false);
             remote_bundleInfo.CombineUrl(RemoteUrlBaseVersion(version));
             Instance.onCheckFinishCB = onCheckFinish;
             Instance.onUpdateFinishCB = onUpdateFinish;
@@ -269,7 +276,7 @@ namespace EasyAsset
 
         static string RemoteUrlBaseVersion(string version)
         {
-            return Setting.RemoteRootUrl + "/" + version;
+            return Setting.RemoteRootDomain + "/" + version;
         }
 
         void OnDownloadBundleFinish()

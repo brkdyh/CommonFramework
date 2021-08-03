@@ -67,6 +67,18 @@ namespace EasyAsset
             }
         }
 
+        bool enableCheck = true;
+        public string currentMD5 { get; private set; } = "";
+        //检查完整性
+        public bool Check()
+        {
+            if (!enableCheck)
+                return true;
+
+            currentMD5 = Utils.GetMD5(data);
+            return currentMD5 == bundleMD5;
+        }
+
         public void Dispose()
         {
             if (webRequest != null)
@@ -74,18 +86,25 @@ namespace EasyAsset
             webRequest = null;
         }
 
-        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5, string url)
+        public void Reset()
+        {
+            Dispose();
+            BeginDownload();
+        }
+
+        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5, string url,bool enableCheck)
         {
             BundleDownloadRequest req = new BundleDownloadRequest();
             req.bundleName = bundleName;
             req.bundleMD5 = bundleMD5;
             req.url = url;
+            req.enableCheck = enableCheck;
             return req;
         }
 
         public static BundleDownloadRequest CreateRequest(UpdateBundle updateBundle)
         {
-            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url);
+            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url, updateBundle.enableCheck);
         }
     }
 }

@@ -95,6 +95,14 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 
             if (currentRequest.isDone)
             {//当前下载已经完成
+                if (!currentRequest.Check())
+                {//完整性验证未通过,重新下载
+                    Debug.LogErrorFormat(currentRequest.bundleName + " 下载出错，文件内容不一致。 local_md5:{0},remote_md5:{1}",
+                        currentRequest.currentMD5, currentRequest.bundleMD5);
+                    currentRequest.Reset();
+                    return;
+                }
+
                 Debug.Log("完成下载: " + currentRequest.bundleName);
 
                 currentStatus = Status.Writing;

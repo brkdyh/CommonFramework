@@ -62,7 +62,7 @@ namespace EasyAsset
 
             GUILayout.Label("资源下载设置:", EA_GUIStyle.mid_label);
             GUILayout.Space(5);
-            config.RemoteBundleRootUrl = EditorGUILayout.TextField("服务器Bundle文件根路径的Url:", config.RemoteBundleRootUrl);
+            config.RemoteBundleRootDomain = EditorGUILayout.TextField("服务器Bundle文件根路径:", config.RemoteBundleRootDomain);
 
             GUILayout.EndVertical();
             if (GUI.changed)
