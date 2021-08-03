@@ -326,5 +326,17 @@ namespace EasyAsset
 
             System.Diagnostics.Process.Start(PathHelper.EXTERNAL_ASSET_PATH);
         }
+
+        [MenuItem("公共框架/Easy Assets/清空本地资源路径", priority = 400)]
+        public static void ClearAssetLocalPath()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(EditorDefiner.EditorPath + "/Resources/EasyAssetConfig.asset");
+            PathHelper.Init(config.LoadPath);
+            if (Directory.Exists(PathHelper.EXTERNAL_ASSET_PATH))
+            {
+                Directory.Delete(PathHelper.EXTERNAL_ASSET_PATH, true);
+                Directory.CreateDirectory(PathHelper.EXTERNAL_ASSET_PATH);
+            }
+        }
     }
 }
