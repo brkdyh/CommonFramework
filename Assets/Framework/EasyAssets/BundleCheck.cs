@@ -152,8 +152,20 @@ namespace EasyAsset
             string localBundleInfoPath = PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.BUNDLE_INFO_FILE;
             if (File.Exists(localBundleInfoPath))
             {
-                localBundleInfo.LoadBundleInfo(File.OpenText(localBundleInfoPath));
-                return;
+                var sr = File.OpenText(localBundleInfoPath);
+                try
+                {
+                    localBundleInfo.LoadBundleInfo(sr);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    sr.Close();
+                    if (File.Exists(localBundleInfoPath))
+                        File.Delete(localBundleInfoPath);
+
+                    Debug.LogException(ex);
+                }
             }
 
             var ta = Resources.Load<TextAsset>(EASY_DEFINE.BUNDLE_INFO_NAME);
@@ -175,10 +187,19 @@ namespace EasyAsset
                     //Debug.LogFormat("Need Update Bundle (name = {0},ms5 = {1})", bundle.Key, bundle.Value);
                 }
                 else
-                {//存在文件，验证文件尺寸
-                    long size = Utils.GetFileSize(bundlePath);
-                    if (size != bundle.Value.bundleSize)
-                        list.Add(new UpdateBundle(bundle.Key, bundle.Value.bundleMD5, bundle.Value.bundleSize));
+                {
+                    if (Setting.bundleCheckMode == Setting.BundleCheckMode.MD5)
+                    {//存在文件，验证文件md5
+                        var md5 = Utils.GetMD5(bundlePath);
+                        if (md5 != bundle.Value.bundleMD5)
+                            list.Add(new UpdateBundle(bundle.Key, bundle.Value.bundleMD5, bundle.Value.bundleSize));
+                    }
+                    else
+                    {//存在文件，验证文件尺寸
+                        long size = Utils.GetFileSize(bundlePath);
+                        if (size != bundle.Value.bundleSize)
+                            list.Add(new UpdateBundle(bundle.Key, bundle.Value.bundleMD5, bundle.Value.bundleSize));
+                    }
                 }
             }
             return list;
@@ -236,7 +257,7 @@ namespace EasyAsset
                 remoteBundleInfo = LoadBundleInfo(data);
 
                 updateList = GetUpdateListByRemote();
-                Debug.Log(updateList.Count);
+                //Debug.Log(updateList.Count);
                 if (updateList.Count <= 0)
                 {
                     Debug.Log("当前无需更新");
@@ -259,6 +280,8 @@ namespace EasyAsset
         //远程 bundle info 下载失败
         void onDownloadBundleInfoError(BundleDownloadRequest request)
         {
+            BundleDownloadManager.CancleDownload();
+            inChecking = false;
             try
             {
                 onCheckFinishCB?.Invoke(BundleCheckResult.DownloadError);
@@ -267,8 +290,6 @@ namespace EasyAsset
             {
                 Debug.LogError(ex);
             }
-
-            inChecking = false;
         }
 
         //从远程bundle info中获得需要更新的文件
@@ -294,10 +315,20 @@ namespace EasyAsset
                     continue;
                 }
 
-                //若本地存在文件，比对一下md5值
-                var local_md5 = Utils.GetMD5(local_file_path);
-                if (local_md5 != rm_bd.Value.bundleMD5)
-                    updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value.bundleMD5, rm_bd.Value.bundleSize));
+                if (Setting.bundleCheckMode == Setting.BundleCheckMode.MD5)
+                {
+                    //若本地存在文件，(比对一下md5值)
+                    var local_md5 = Utils.GetMD5(local_file_path);
+                    if (local_md5 != rm_bd.Value.bundleMD5)
+                        updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value.bundleMD5, rm_bd.Value.bundleSize));
+                }
+                else
+                {
+                    //若本地存在文件，(比对一下文件大小)
+                    var local_size = Utils.GetFileSize(local_file_path);
+                    if (local_size != rm_bd.Value.bundleSize)
+                        updateBundles.Add(CreateDownloadBundle(rm_bd.Key, rm_bd.Value.bundleMD5, rm_bd.Value.bundleSize));
+                }
             }
             return updateBundles;
         }

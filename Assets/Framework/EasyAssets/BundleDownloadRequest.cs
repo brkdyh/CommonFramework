@@ -12,6 +12,7 @@ namespace EasyAsset
         public string bundleName { get; private set; }
         public string bundleMD5 { get; private set; }
         public string url { get; private set; }
+        public long bundleSize { get; private set; }
 
         UnityWebRequest webRequest;
 
@@ -106,8 +107,15 @@ namespace EasyAsset
             if (!enableCheck)
                 return true;
 
-            currentMD5 = Utils.GetMD5(data);
-            return currentMD5 == bundleMD5;
+            if (Setting.bundleCheckMode == Setting.BundleCheckMode.MD5)
+            {
+                currentMD5 = Utils.GetMD5(data);
+                return currentMD5 == bundleMD5;
+            }
+            else
+            {
+                return data.Length == bundleSize;
+            }
         }
 
         public void Dispose()
@@ -123,19 +131,20 @@ namespace EasyAsset
             BeginDownload();
         }
 
-        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5,string url,bool enableCheck)
+        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5, string url, long bundleSize, bool enableCheck)
         {
             BundleDownloadRequest req = new BundleDownloadRequest();
             req.bundleName = bundleName;
             req.bundleMD5 = bundleMD5;
             req.url = url;
+            req.bundleSize = bundleSize;
             req.enableCheck = enableCheck;
             return req;
         }
 
         public static BundleDownloadRequest CreateRequest(UpdateBundle updateBundle)
         {
-            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url, updateBundle.enableCheck);
+            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url, updateBundle.bundleSize, updateBundle.enableCheck);
         }
     }
 }

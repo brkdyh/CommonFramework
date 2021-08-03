@@ -16,4 +16,6 @@ MonoBehaviour:
   RefrenceCheckTime: 1
   DisposeCacheTime: 5
   AssetBundleLiveTime: 5
-  RemoteBundleRootUrl: https://dlhk.yojoygame.com/rabbit
+  RemoteBundleRootDomain: https://dlhk.yojoygame.com/rabbit/
+  RequestTimeOut: 30
+  bundleCheckMode: 0

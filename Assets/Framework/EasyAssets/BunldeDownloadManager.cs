@@ -219,12 +219,37 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
     /// <summary>
     /// 重置当前下载请求状态，可以重新开始下载。
     /// </summary>
-    public static void ResetCurrentRequest()
+    public static bool ResetCurrentRequest()
     {
         if (Instance.currentRequest != null)
         {
             Instance.currentRequest.Reset();
             Instance.currentStatus = Status.Downloading;
+            return true;
         }
+
+        return false;
+    }
+
+    //取消下载
+    public static void CancleDownload()
+    {
+        Instance.currentStatus = Status.Idle;
+        Instance.reqQueue.Clear();
+        Instance.totalbytes = 0;
+        Instance.totalStep = 1;
+        Instance.currentStep = 0;
+        Instance._lastFinishDownBytes = 0;
+        Instance._curDownBytes = 0;
+        Instance.downloadProgress = 0;
+
+        if (Instance.curFile != null)
+            Instance.curFile.Close();
+        Instance.curFile = null;
+
+        if (Instance.currentRequest != null)
+            Instance.currentRequest.Dispose();
+        Instance.currentRequest = null;
+
     }
 }
