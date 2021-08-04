@@ -178,7 +178,7 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
     Action<BundleDownloadRequest> onDownloadErrorCB;
     internal static void AddDownloadErrorHandler(Action<BundleDownloadRequest> downloadErrorCB)
     { Instance.onDownloadErrorCB += downloadErrorCB; }
-    internal static void ClearDownloadHandler() { Instance.onDownloadErrorCB = null; }
+    internal static void ClearDownloadErrorHandler() { Instance.onDownloadErrorCB = null; }
 
     private bool DownloadBundles_Internal(List<UpdateBundle> updateBundles,
         Action onFinish, Action<float> onProgress = null)

@@ -50,6 +50,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 {
     //外部资源清单
     public AssetList externalAssetList { get; private set; }
+    public static string AssetVersion { get { return Instance.externalAssetList != null ? Instance.externalAssetList.BuildVersion : "no version"; } }
 
     AssetBundleManifest manifest = null;
 

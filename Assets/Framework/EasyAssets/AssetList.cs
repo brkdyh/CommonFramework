@@ -17,7 +17,7 @@ namespace EasyAsset
         //Manifest文件名称
         public string ManifestFilename { get; private set; }
 
-        public string BuildVersion { get; private set; }
+        public string BuildVersion { get; private set; } = "no version";
 
         //资源 <----> Assebundle 映射
         Dictionary<string, string> asset2bundleMapping = new Dictionary<string, string>();
@@ -37,8 +37,7 @@ namespace EasyAsset
                             return loadStream(m_sr);
                         }
                     }
-                    Debug.Log("AssetMatainer: 未创建外部资源清单,只能加载内部资源。");
-                    return new AssetList();
+                    throw new Exception("There is No AssetList!");
                 }
 
                 var f_sr = File.OpenText(path);

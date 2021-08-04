@@ -237,6 +237,9 @@ namespace EasyAsset
             }
 
             //开始下载
+            BundleDownloadManager.ClearDownloadErrorHandler();
+            if (Instance.onDownloadErrorCB != null)
+                BundleDownloadManager.AddDownloadErrorHandler(Instance.onDownloadErrorCB);
             BundleDownloadManager.DownloadBundles(updateList, Instance.OnDownloadBundleFinish, onDownloadProgress);
             return true;
         }
@@ -274,6 +277,10 @@ namespace EasyAsset
             }
 
             InvokeCheckFinish(BundleCheckResult.Succeed);
+            //设置下载
+            BundleDownloadManager.ClearDownloadErrorHandler();
+            if (onDownloadErrorCB != null)
+                BundleDownloadManager.AddDownloadErrorHandler(onDownloadErrorCB);
             BundleDownloadManager.DownloadBundles(updateList, OnDownloadBundleFinish, onDownloadProgressCB);
         }
 
@@ -354,7 +361,7 @@ namespace EasyAsset
             Instance.onCheckFinishCB = onCheckFinish;
             Instance.onUpdateFinishCB = onUpdateFinish;
             Instance.onDownloadProgressCB = onDownloadProgress;
-            BundleDownloadManager.ClearDownloadHandler();
+            BundleDownloadManager.ClearDownloadErrorHandler();
             BundleDownloadManager.AddDownloadErrorHandler(Instance.onDownloadBundleInfoError);
             BundleDownloadManager.DownloadBundle(remote_bundleInfo, Instance.onDownloadBundleInfo);
         }
@@ -401,6 +408,14 @@ namespace EasyAsset
                 Debug.LogException(ex);
             }
         }
+
+        Action<BundleDownloadRequest> onDownloadErrorCB; //下载文件失败回调
+        /// <summary>
+        /// 设置Bundle文件下载失败回调方法
+        /// </summary>
+        /// <param name="onDownloadError"></param>
+        public static void SetDownloadBundleErrorHandler(Action<BundleDownloadRequest> onDownloadError)
+        { Instance.onDownloadErrorCB = onDownloadError; }
 
         //创建下载包
         static UpdateBundle CreateDownloadBundle(string bundleName, string md5, long bundleSize)
