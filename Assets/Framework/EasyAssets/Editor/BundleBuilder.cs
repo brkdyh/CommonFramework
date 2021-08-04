@@ -51,7 +51,7 @@ namespace EasyAsset
 
         public BuildTarget curTarget = BuildTarget.Android;
         public string buildRootPath = "";
-        public string buildPath { get { return buildRootPath + "/" + buildVersion; } }
+        public string buildPath { get { return buildRootPath + "/" + buildVersion + "/" + curTarget.ToString(); } }
         bool copyToPersistentPath = false;
         string buildVersion = "0.0.1_0";
 

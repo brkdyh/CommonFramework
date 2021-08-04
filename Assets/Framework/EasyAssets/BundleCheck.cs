@@ -428,7 +428,13 @@ namespace EasyAsset
         //远程URL基地址
         static string RemoteUrlBaseVersion(string version)
         {
-            return Setting.RemoteRootDomain + "/" + version;
+            string platform = "Unknow";
+#if UNITY_IOS
+            platform = "iOS";
+#elif UNITY_ANDROID
+            platform = "Android";
+#endif
+            return Setting.RemoteRootDomain + "/" + version + "/" + platform;
         }
 
         //下载bundle完成
