@@ -127,7 +127,7 @@ namespace EasyAsset
 
                     if (!buildInSceneMap.ContainsKey(sceneName))
                         buildInSceneMap.Add(sceneName, enable);
-                    Debug.Log("Build in Scene : " + sceneName + "," + enable);
+                    //Debug.Log("Build in Scene : " + sceneName + "," + enable);
                 }
             }
         }

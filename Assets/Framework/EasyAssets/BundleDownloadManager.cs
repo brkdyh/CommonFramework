@@ -24,7 +24,7 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 
     Queue<BundleDownloadRequest> reqQueue = new Queue<BundleDownloadRequest>();
 
-    public ulong downloadSpeed { get { return currentRequest == null ? 0 : currentRequest.downloadSpeed; } }
+    public float downloadSpeed { get { return isDownloading ? downloadbytes / _downloadTime : 0f; } }
 
     public float downloadProgress { get; private set; } = 0;
 
@@ -47,6 +47,8 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 
     public int currentStep { get; private set; } = 0;
     public int totalStep { get; private set; } = 1;
+
+    float _downloadTime = 0.001f;
 
     public FileStream curFile;
 
@@ -107,6 +109,7 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
                 return;
             }
 
+
             if (currentRequest.isDone)
             {//当前下载已经完成
                 if (!currentRequest.Check())
@@ -132,8 +135,10 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
             }
             else
             {//更新下载进度
-                downloadProgress = (currentStep + currentRequest.progress) / totalStep;
-                _curDownBytes = (long)currentRequest._lastCacheDownloadBytes;
+                _curDownBytes = (long)currentRequest.downloadSize;
+                downloadProgress = (float)downloadbytes / totalbytes;
+                //Debug.Log(currentRequest.bundleName + " => progress = " + downloadProgress + ", curStep = " + currentStep
+                //    + ", curPro = " + currentRequest.progress + ", total step = " + totalStep + ", downBytes = " + _curDownBytes);
                 try
                 {
                     onProgressCB?.Invoke(downloadProgress);
@@ -143,6 +148,8 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
                     Debug.LogException(ex);
                 }
             }
+
+            _downloadTime += Time.deltaTime;
         }
     }
 
@@ -182,6 +189,7 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
         totalbytes = 0;
         _lastFinishDownBytes = 0;
         _curDownBytes = 0;
+        _downloadTime = 0.001f;
 
         reqQueue.Clear();
         foreach (var ub in updateBundles)

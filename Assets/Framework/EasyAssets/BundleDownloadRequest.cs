@@ -22,11 +22,12 @@ namespace EasyAsset
             {
                 if (webRequest != null)
                 {
+                    //Debug.Log(bundleName + ", down_bytes = " + webRequest.downloadedBytes + ", progress = " + webRequest.downloadProgress);
                     //更新下载速度
-                    if (Time.realtimeSinceStartup - _lastCalSpeedTime >= 1f)
+                    if (Time.realtimeSinceStartup - _lastCalSpeedTime >= calculateFrequence)
                     {
                         if (_lastCacheDownloadBytes == webRequest.downloadedBytes)
-                            _timeOutCounter++;
+                            _timeOutCounter += calculateFrequence;
                         else
                             _timeOutCounter = 0;
 
@@ -34,9 +35,18 @@ namespace EasyAsset
                             isTimeOut = true;           //下载超时了
 
                         _lastCalSpeedTime = Time.realtimeSinceStartup;
-                        downloadSpeed = webRequest.downloadedBytes - _lastCacheDownloadBytes;
-                        _lastCacheDownloadBytes = webRequest.downloadedBytes;
+                        //var ratio = 1 / calculateFrequence;
+                        //downloadSpeed = (webRequest.downloadedBytes - _lastCacheDownloadBytes) * ratio;
+                        //_lastCacheDownloadBytes = webRequest.downloadedBytes;
+                        //Debug.Log(bundleName + " downloading speed = " + downloadSpeed + ", ratio = " + ratio);
                     }
+
+                    //if (webRequest.isDone)
+                    //{
+                    //    var downloadSpendTime = Time.realtimeSinceStartup - beginDownloadTime;
+                    //    downloadSpeed = webRequest.downloadedBytes / downloadSpendTime;
+                    //    Debug.Log(bundleName + " is done speed = " + downloadSpeed);
+                    //}
 
                     return webRequest.isDone;
                 }
@@ -71,10 +81,13 @@ namespace EasyAsset
 
         public ulong _lastCacheDownloadBytes { get; private set; }
         float _lastCalSpeedTime = 0;
-        public ulong downloadSpeed { get; private set; } = 0;
+        float calculateFrequence = 1f;
+        //public float downloadSpeed { get; private set; } = 0;
 
         float _timeOutCounter = 0;
         bool isTimeOut = false; //是否超时
+
+        //float beginDownloadTime = 0;        //开始下载时间
 
         public void BeginDownload()
         {
@@ -83,6 +96,8 @@ namespace EasyAsset
             webRequest = new UnityWebRequest(url);
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.SendWebRequest();
+            //beginDownloadTime = Time.realtimeSinceStartup;
+
             Debug.Log("开始下载: " + bundleName + "\n" + url);
         }
 
