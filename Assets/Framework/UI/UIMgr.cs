@@ -131,7 +131,7 @@ public class UIMgr : MonoSingleton<UIMgr>
         }
     }
 
-    public T OpenUI<T>(string uiName = "")
+    public T OpenUI<T>(string uiName = "", string uiPath = "")
         where T : UIBase
     {
         T ui = default;
@@ -144,8 +144,11 @@ public class UIMgr : MonoSingleton<UIMgr>
 
         if (!ContainUI(uiName))
         {
+#if USE_EASYASSET
+            var go = AssetMaintainer.LoadGameobject((uiPath == "" ? UI_Root_Path : uiPath) + uiName, parent);
+#else
             var go = Instantiate(Resources.Load(UI_Root_Path + uiName) as GameObject, parent);
-
+#endif
             if (go == null)
             {
                 Debug.LogError("Can't Find UI by Name = " + uiName);
@@ -271,11 +274,11 @@ public class UIMgr : MonoSingleton<UIMgr>
         TopUI = null;
     }
 
-    #region Static 方法
+#region Static 方法
 
-    public static T Open<T>(string uiName = "") where T : UIBase
+    public static T Open<T>(string uiName = "", string uiPath = "") where T : UIBase
     {
-        return Instance.OpenUI<T>(uiName);
+        return Instance.OpenUI<T>(uiName, uiPath);
     }
 
     public static T Find<T>(string uiName = "") where T : UIBase
@@ -283,6 +286,42 @@ public class UIMgr : MonoSingleton<UIMgr>
         return Instance.FindUI<T>(uiName);
     }
 
-
     #endregion
+
+#if UNITY_EDITOR
+
+    [UnityEditor.MenuItem("公共框架/UIMgr/修改加载方式", priority = 100)]
+    public static void ChangeLoadMode()
+    {
+        string defines = UnityEditor.PlayerSettings.GetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone);
+        if (defines.Contains("USE_EASYASSET"))
+        {
+            if (UnityEditor.EditorUtility.DisplayDialog("修改加载方式", "正在使用 EasyAsset 加载UI资源，是否改为使用 Resources 加载?", "修改", "取消"))
+            {
+                defines = defines.Replace("USE_EASYASSET;", "");
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone, defines);
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Android, defines);
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.iOS, defines);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+        }
+        else
+        {
+            if (UnityEditor.EditorUtility.DisplayDialog("修改加载方式", "正在使用 Resources 加载UI资源，是否改为使用 EasyAsset 加载?", "修改", "取消"))
+            {
+                if (defines == "")
+                    defines = defines + "USE_EASYASSET;";
+                else if (defines.EndsWith(";"))
+                    defines = defines + "USE_EASYASSET;";
+                else
+                    defines = ";USE_EASYASSET;";
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone, defines);
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Android, defines);
+                UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.iOS, defines);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+        }
+    }
+
+#endif
 }

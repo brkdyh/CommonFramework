@@ -667,7 +667,10 @@ PlayerSettings:
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    1: USE_EASYASSET
+    4: USE_EASYASSET
+    7: USE_EASYASSET
   platformArchitecture: {}
   scriptingBackend: {}
   il2cppCompilerConfiguration: {}

@@ -37,7 +37,8 @@ namespace EasyAsset
                             return loadStream(m_sr);
                         }
                     }
-                    throw new Exception("There is No AssetList!");
+                    Debug.Log("AssetMatainer: 未创建外部资源清单,只能加载内部资源。");
+                    return new AssetList();
                 }
 
                 var f_sr = File.OpenText(path);
