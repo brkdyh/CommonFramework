@@ -23,7 +23,7 @@ namespace EasyAsset
                 bundleSize = size;
             }
         }
-        public string buildVersion { get; private set; } = "0.0.1(0)";
+        public string buildVersion { get; private set; } = "0.0.1_0";
 
         //bundle name <=> md5 映射
         public Dictionary<string, BundleInfoData> bundles = new Dictionary<string, BundleInfoData>();

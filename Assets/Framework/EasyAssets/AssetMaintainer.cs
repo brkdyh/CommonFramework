@@ -209,7 +209,10 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             EasyBundle eBundle = TryGetDisposeBundle(bundleName);
 
             if (eBundle == null)
-                eBundle = new EasyBundle(bundleName);
+            {
+                bool isManaged = !Setting.UnmanagedBundles.Contains(bundleName);
+                eBundle = new EasyBundle(bundleName, isManaged);
+            }
             easyBundles.Add(eBundle.bundleName, eBundle);
             return eBundle;
         }
@@ -460,18 +463,21 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             {
                 var eb = bundle.Value;
                 eb.Tick();
-                if (eb.used && !eb.HasRefrence)
+                if (eb.isManaged && eb.used && !eb.HasRefrence)
                     eb.ReleaseBundle();
                 if (eb.disposed)
                     disposeAddCache.Push(bundle.Key);
             }
         }
 
-        while (disposeAddCache.Count > 0)
+        lock (disposeAddCache)
         {
-            var rm = disposeAddCache.Pop();
-            disposePool.Add(rm, easyBundles[rm]);
-            easyBundles.Remove(rm);
+            while (disposeAddCache.Count > 0)
+            {
+                var rm = disposeAddCache.Pop();
+                disposePool.Add(rm, easyBundles[rm]);
+                easyBundles.Remove(rm);
+            }
         }
     }
 
@@ -492,6 +498,44 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
         while (disposeRemoveCache.Count > 0)
             disposePool.Remove(disposeRemoveCache.Pop());
+    }
+
+    void UnloadBundle_Internal(string bundleName)
+    {
+        if (!easyBundles.ContainsKey(bundleName))
+            return;
+        var eb = easyBundles[bundleName];
+        eb.UnloadBundle();
+    }
+
+    void ReleaseBundle_Internal(string bundleName)
+    {
+        if (!easyBundles.ContainsKey(bundleName))
+            return;
+        var eb = easyBundles[bundleName];
+        if (eb.isManaged)
+            return;
+        eb.ForceDispose();
+        disposeAddCache.Push(bundleName);
+    }
+
+    /// <summary>
+    /// 手动卸载Bundle对象，调用该方法会卸载Asset Bundle对象，不会释放已加载的资源。
+    /// </summary>
+    /// <param name="bundleName"></param>
+    public static void UnloadBundle(string bundleName)
+    {
+        Instance.UnloadBundle_Internal(bundleName);
+    }
+
+    /// <summary>
+    /// 手动释放Bundle对象,调用该方法会卸载Asset Bundle对象，并释放所有已加载的资源。
+    /// (仅对非托管的Bundle对象有效)
+    /// </summary>
+    /// <param name="bundleName"></param>
+    public static void ReleaseBundle(string bundleName)
+    {
+        Instance.ReleaseBundle_Internal(bundleName);
     }
 
     #endregion

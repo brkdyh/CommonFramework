@@ -16,8 +16,8 @@ namespace EasyAsset
         public float DisposeCacheTime = 5f;
         [HideInInspector]
         public float AssetBundleLiveTime = 5f;
-        //[HideInInspector]
-        //public string RemoteBundleInfoUrl;
+        [SerializeField]
+        public List<string> UnmanagedBundles = new List<string>();
 
         /*资源下载*/
         [HideInInspector]

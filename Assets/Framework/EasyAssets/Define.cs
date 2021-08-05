@@ -19,8 +19,6 @@ namespace EasyAsset
 
     public static class Setting
     {
-
-
         public static EasyAssetConfig config { get; private set; }
         public static string LoadPath { get; private set; }
         public static float DisposeCacheTime { get; private set; } = 5f;
@@ -29,6 +27,8 @@ namespace EasyAsset
 
         public static string RemoteRootDomain { get; private set; }
         public static float RequestTimeOut { get; private set; }
+
+        public static List<string> UnmanagedBundles = new List<string>();
 
         public enum BundleCheckMode
         {
@@ -57,6 +57,7 @@ namespace EasyAsset
             RemoteRootDomain = config.RemoteBundleRootDomain;
             RequestTimeOut = config.RequestTimeOut;
             bundleCheckMode = config.bundleCheckMode;
+            UnmanagedBundles = config.UnmanagedBundles;
             inited = true;
         }
     }

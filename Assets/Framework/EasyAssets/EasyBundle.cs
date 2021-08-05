@@ -14,10 +14,11 @@ namespace EasyAsset
 
         public string bundleName { get; private set; }
 
-        public EasyBundle(string bundleName)
+        public EasyBundle(string bundleName, bool isManaged)
         {
             this.bundleName = bundleName;
             bundlePath = PathHelper.EXTERNAL_ASSET_PATH + bundleName;
+            this.isManaged = isManaged;
         }
 
         //Asset Bundle
@@ -27,6 +28,11 @@ namespace EasyAsset
         //是否已使用过
         public bool used { get; private set; } = false;
         public void SetUsed() { used = true; }
+
+        /// <summary>
+        /// 是否托管,非托管的EasyBundle对象不会自动卸载和释放资源，但仍可手动进行卸载与释放操作
+        /// </summary>
+        public bool isManaged { get; private set; } = false;
 
         #region 加载
 
@@ -131,7 +137,7 @@ namespace EasyAsset
             if (disposed)
                 return;
 
-            canResotre = false;
+            canResotre = true;
             disposed = true;
             disposedAt = -1e15f;
         }
@@ -245,6 +251,9 @@ namespace EasyAsset
 
         void CheckBundleLive()
         {
+            if (!isManaged)
+                return;
+
             if (!used)
                 return;
 
