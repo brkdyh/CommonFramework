@@ -87,7 +87,7 @@ namespace EasyAsset
         float _timeOutCounter = 0;
         bool isTimeOut = false; //是否超时
 
-        //float beginDownloadTime = 0;        //开始下载时间
+        public System.DateTime beginDownloadTime { get; private set; }        //开始下载时间
 
         public void BeginDownload()
         {
@@ -96,8 +96,7 @@ namespace EasyAsset
             webRequest = new UnityWebRequest(url);
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.SendWebRequest();
-            //beginDownloadTime = Time.realtimeSinceStartup;
-
+            beginDownloadTime = System.DateTime.Now;
             Debug.Log("开始下载: " + bundleName + "\n" + url);
         }
 

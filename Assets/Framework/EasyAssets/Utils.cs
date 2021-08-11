@@ -36,5 +36,20 @@ namespace EasyAsset
 
             return 0;
         }
+
+        const float KB = 1024;
+        const float MB = KB * KB;
+        const float GB = MB * MB;
+        public static string FormatBytesUnit(float byteLength, string format = "0.00")
+        {
+            if (byteLength < KB)
+                return byteLength.ToString("0") + "B";
+            else if (byteLength < MB)
+                return (byteLength / KB).ToString(format) + "KB";
+            else if (byteLength < GB)
+                return (byteLength / MB).ToString(format) + "MB";
+            else
+                return (byteLength / GB).ToString(format) + "GB";
+        }
     }
 }

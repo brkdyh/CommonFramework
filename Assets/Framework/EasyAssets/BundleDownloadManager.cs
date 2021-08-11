@@ -18,6 +18,7 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
         UnknowError,
     }
 
+    [HideInInspector]
     public Status currentStatus = Status.Idle;
 
     BundleDownloadRequest currentRequest;
@@ -51,6 +52,10 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
     float _downloadTime = 0.001f;
 
     public FileStream curFile;
+
+#if UNITY_EDITOR
+    public Queue<BundleDownloadRequest> finishRequests = new Queue<BundleDownloadRequest>();
+#endif
 
     void TickDownload()
     {
@@ -123,6 +128,10 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
                 _lastFinishDownBytes += (long)currentRequest.downloadSize;
                 _curDownBytes = 0;
                 Debug.Log("完成下载: " + currentRequest.bundleName);
+
+#if UNITY_EDITOR
+                finishRequests.Enqueue(currentRequest);
+#endif
 
                 currentStatus = Status.Writing;
                 //开始写入文件
