@@ -359,6 +359,11 @@ namespace REFU
                 //Debug.Log(type);
 
                 fis[col - 1] = new TypeFieldInfo();
+                if (name.StartsWith("#"))
+                {//#号开头，识别为主键
+                    name = name.Substring(1, name.Length - 1);
+                    fis[col - 1].mainKey = true;
+                }
                 fis[col - 1].FieldName = name;
                 fis[col - 1].FieldType = TypeMapper.TYPE_MAPPER.ContainsKey(type) ?
                      TypeMapper.TYPE_MAPPER[type] : System.Type.GetType(type);
