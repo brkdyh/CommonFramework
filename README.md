@@ -7,15 +7,15 @@
 ---
 
 ## 2.存档工具
-详见[参考文档](Framework/Save/README.rd)
+详见[参考文档](https://github.com/brkdyh/CommonFramework/tree/main/Assets/Framework/Save/README.rd)
 
 ---
 
 ## 3.消息系统
-详见[参考文档](Framework/EasyMessage/README.md)
+详见[参考文档](https://github.com/brkdyh/CommonFramework/tree/main/Assets/Framework/EasyMessage/README.md)
 
 ## 4.资源管理框架
-详见[参考文档](Framework/EasyAssets/README.md)
+详见[参考文档](https://github.com/brkdyh/CommonFramework/tree/main/Assets/Framework/EasyAssets/README.md)
 
 ## 5.其他
 一些其他的轻量化工具设计，按需实用。
