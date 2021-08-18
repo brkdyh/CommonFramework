@@ -5,6 +5,7 @@
 ---
 ## 1.1配置说明
 * 配置文件路径为 *../Save/Resources/SaveDataConfig.asset* ,如下图所示:
+
 ![配置文件](https://github.com/brkdyh/CommonFramework/tree/main/picture/pic_211.png "存档配置文件")
 
 |配置属性|解释|
