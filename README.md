@@ -2,7 +2,7 @@
 基于Unity开发中通常会遇到的各种需求而开发的基础框架。为一些通用的问题提供解决方案。
 
 ## 1.读表工具
-详见[参考文档](../../../Framework/ReadExcelForUnity/README.md)
+详见[参考文档](/Framework/ReadExcelForUnity/README.md)
 
 ---
 
