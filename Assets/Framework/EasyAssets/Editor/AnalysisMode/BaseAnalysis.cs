@@ -248,6 +248,8 @@ namespace EasyAsset
         {
             maps.Clear();
         }
+
+        public bool showCountZero = false;
     }
 
 }

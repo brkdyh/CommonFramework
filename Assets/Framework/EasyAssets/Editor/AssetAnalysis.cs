@@ -114,9 +114,13 @@ namespace EasyAsset
                 GUILayout.Space(10);
 
                 GUILayout.BeginHorizontal();
-                curAnalysis.filter = EditorGUILayout.TextField("过滤器:", curAnalysis.filter);
+                curAnalysis.filter = EditorGUILayout.TextField("过滤器:", curAnalysis.filter, GUILayout.MinWidth(400));
                 GUILayout.Space(30);
-                if (GUILayout.Button("分析"))
+                GUILayout.Label(analysisType == AnalysisType.正向分析 ? "显示无依赖项:" : "显示无引用项:",GUILayout.MaxWidth(80));
+                GUILayout.Space(5);
+                curAnalysis.showCountZero = GUILayout.Toggle(curAnalysis.showCountZero, "");
+                GUILayout.Space(30);
+                if (GUILayout.Button("分析", GUILayout.MinWidth(150)))
                 {
                     curAnalysis.Clear();
                     curAnalysis.analysisPath = analysisPath;
@@ -124,6 +128,7 @@ namespace EasyAsset
                     string[] ignores = analysisIgnore.Split(';');
                     curAnalysis.Analysis(Directory.GetFiles(analysisPath, "*.*", SearchOption.AllDirectories), ignores);
                 }
+                GUILayout.Space(10);
                 GUILayout.EndHorizontal();
 
                 GUILayout.Space(5);

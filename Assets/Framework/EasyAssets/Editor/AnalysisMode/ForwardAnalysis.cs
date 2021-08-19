@@ -58,20 +58,53 @@ namespace EasyAsset
         string batchAssetBundleName_b;      //依赖项AB包名称
         string batchAssetVariant_b;         //依赖项AB包后缀
 
-        int dpBatchType = 0;        //依赖批处理类型
-        bool getSkip(int type, string assetPath, string assetBundleName)
+        int _lastdpBatchType1 = -1;
+        int _lastdpBatchType2 = -1;
+        int dpBatchType1 = -1;        //依赖批处理类型1
+        int dpBatchType2 = -1;        //依赖批处理类型2
+
+        int _lastdoAll = 0;
+        int doAll = 0;
+        bool getSkip(string assetPath, string assetBundleName)
         {
+            if (doAll == 0)
+                return false;
+
             bool skip = false;
-            if (type == 0)
-                skip = false;
-            else if (type == 1)
-                skip = !common.isCommonDependency(assetPath);
-            else if (type == 2)
-                skip = common.isCommonDependency(assetPath);
-            else if (type == 3)
-                skip = string.IsNullOrEmpty(assetBundleName);
+
+            if (dpBatchType1 == -1
+                && dpBatchType2 != -1)
+            {
+                if (dpBatchType2 == 0)
+                    skip = string.IsNullOrEmpty(assetBundleName);
+                else
+                    skip = !string.IsNullOrEmpty(assetBundleName);
+            }
+            else if (dpBatchType2 == -1
+                && dpBatchType1 != -1)
+            {
+                if (dpBatchType1 == 0)
+                    skip = !common.isCommonDependency(assetPath);
+                else
+                    skip = common.isCommonDependency(assetPath);
+            }
             else
-                skip = !string.IsNullOrEmpty(assetBundleName);
+            {
+                var skip1 = false;
+                if (dpBatchType1 == 0)
+                    skip1 = !common.isCommonDependency(assetPath);
+                else
+                    skip1 = common.isCommonDependency(assetPath);
+
+                var skip2 = false;
+                if (dpBatchType2 == 0)
+                    skip2 = string.IsNullOrEmpty(assetBundleName);
+                else
+                    skip2 = !string.IsNullOrEmpty(assetBundleName);
+
+                skip = skip1 || skip2;
+            }
+
             return skip;
         }
 
@@ -113,7 +146,7 @@ namespace EasyAsset
                         {
                             foreach (var dp in maps)
                             {
-                                if (dp.Value.DependencyCount > 0)
+                                if (showCountZero ? dp.Value.DependencyCount >= 0 : dp.Value.DependencyCount > 0)
                                 {
                                     if (!string.IsNullOrEmpty(filter)
                                         && !dp.Key.Contains(filter))
@@ -139,7 +172,7 @@ namespace EasyAsset
                     assetCount = 0;
                     foreach (var dp in maps)
                     {
-                        if (dp.Value.DependencyCount > 0)
+                        if (showCountZero ? dp.Value.DependencyCount >= 0 : dp.Value.DependencyCount > 0)
                         {
                             if (!string.IsNullOrEmpty(filter)
                                 && !dp.Key.Contains(filter))
@@ -150,7 +183,7 @@ namespace EasyAsset
                             if (assetCount >= pageIndexMin("asset")
                                 && assetCount <= pageMaxIndex("asset"))
                                 DrawAsset(dp.Value.assetData, curAssetPath == dp.Key ? Color.yellow : GUI.contentColor,
-                                    true, "依赖详情", true, IntersectionAnalysis.enabled);
+                                    dp.Value.DependencyCount > 0, "依赖详情", true, IntersectionAnalysis.enabled);
 
                             assetCount++;
 
@@ -181,7 +214,34 @@ namespace EasyAsset
                         GUILayout.Space(10);
                         EditorGUILayout.LabelField(string.Format("资源依赖项(合计 {0} 项): ", dpd.AppliesCount));
                         GUILayout.FlexibleSpace();
-                        dpBatchType = GUILayout.Toolbar(dpBatchType, new string[] { "全部", "公共", "非公共" ,"有AB标记","无AB标记"}, GUILayout.Width(300));
+                        doAll = GUILayout.Toolbar(doAll, new string[] { "全部" }, GUILayout.Width(50));
+                        dpBatchType1 = GUILayout.Toolbar(dpBatchType1, new string[] { "公共", "非公共" }, GUILayout.Width(100));
+                        dpBatchType2 = GUILayout.Toolbar(dpBatchType2, new string[] { "有AB标记", "无AB标记" }, GUILayout.Width(150));
+
+                        if (dpBatchType1 != _lastdpBatchType1)
+                        {
+                            _lastdpBatchType1 = dpBatchType1;
+                            doAll = -1;
+                        }
+
+                        if (dpBatchType2 != _lastdpBatchType2)
+                        {
+                            _lastdpBatchType2 = dpBatchType2;
+                            doAll = -1;
+                        }
+
+                        if (_lastdoAll != doAll)
+                        {
+                            _lastdoAll = doAll;
+                            if (doAll == 0)
+                            {
+                                dpBatchType1 = -1;
+                                _lastdpBatchType1 = -1;
+                                dpBatchType2 = -1;
+                                _lastdpBatchType2 = -1;
+                            }
+                        }
+
                         GUILayout.Space(10);
                         GUILayout.EndHorizontal();
                         GUILayout.Space(5);
@@ -199,7 +259,7 @@ namespace EasyAsset
                                 foreach (var dp in dpd.GetDependencies())
                                 {
                                     var adp = FindAnalysisData(dp.Key);
-                                    if (!getSkip(dpBatchType, dp.Key, adp.assetData.assetBundleName))
+                                    if (!getSkip(dp.Key, adp.assetData.assetBundleName))
                                     {
                                         adp.assetData.assetBundleName = batchAssetBundleName_b;
                                         adp.assetData.assetBundleVariant = batchAssetVariant_b;
@@ -223,7 +283,7 @@ namespace EasyAsset
                         {
                             var asset = FindAnalysisData(dp.Key).assetData;
 
-                            if (!getSkip(dpBatchType, dp.Key, asset.assetBundleName))
+                            if (!getSkip(dp.Key, asset.assetBundleName))
                             {
                                 if (depCount >= pageIndexMin("dep")
                                     && depCount <= pageMaxIndex("dep"))

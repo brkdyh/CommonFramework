@@ -58,7 +58,7 @@ namespace EasyAsset
                         {
                             foreach (var dp in maps)
                             {
-                                if (dp.Value.DependencyCount > 0)
+                                if (showCountZero ? dp.Value.AppliesCount >= 0 : dp.Value.AppliesCount > 0)
                                 {
                                     if (!string.IsNullOrEmpty(filter)
                                         && !dp.Key.Contains(filter))
@@ -84,7 +84,7 @@ namespace EasyAsset
                     assetCount = 0;
                     foreach (var dp in maps)
                     {
-                        if (dp.Value.AppliesCount > 0)
+                        if (showCountZero ? dp.Value.AppliesCount >= 0 : dp.Value.AppliesCount > 0)
                         {
                             if (!string.IsNullOrEmpty(filter)
                                 && !dp.Key.Contains(filter))
@@ -94,7 +94,7 @@ namespace EasyAsset
 
                             if (assetCount >= pageIndexMin("asset")
                                 && assetCount <= pageMaxIndex("asset"))
-                                DrawAsset(dp.Value.assetData, GUI.contentColor, true, "引用详情", true, false);
+                                DrawAsset(dp.Value.assetData, GUI.contentColor, dp.Value.AppliesCount > 0, "引用详情", true, false);
 
                             assetCount++;
 
