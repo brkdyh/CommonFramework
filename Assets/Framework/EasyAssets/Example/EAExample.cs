@@ -54,11 +54,11 @@ public class EAExample : MonoBehaviour
         sphere.name = "Async External Sphere 2";
     }
 
-    private void Update()
+    private void OnGUI()
     {
-        if (Input.GetKeyDown(KeyCode.M))
+        if (GUILayout.Button("切换场景"))
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene("EANull");
+            AssetMaintainer.LoadScene("Assets/Framework/EasyAssets/Example/EANull.unity", null);
         }
     }
 }

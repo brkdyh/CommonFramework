@@ -4,8 +4,5 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes:
-  - enabled: 1
-    path: Assets/Framework/EasyAssets/Example/Resources/EANull.unity
-    guid: 26bb1fe7b71f146ea9ef6c92f62fa0a8
+  m_Scenes: []
   m_configObjects: {}

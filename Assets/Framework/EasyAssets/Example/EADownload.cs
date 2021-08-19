@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EasyAsset;
 
-public class EAUpdate : MonoBehaviour
+public class EADownload : MonoBehaviour
 {
     float downloadProgress;
 
@@ -33,7 +33,7 @@ public class EAUpdate : MonoBehaviour
     {
         Debug.Log("更新完成");
         AssetMaintainer.Init();
-        AssetMaintainer.LoadScene("Assets/Framework/EasyAssets/Example/Resources/EAExample.unity", onLoadScene);
+        AssetMaintainer.LoadScene("Assets/Framework/EasyAssets/Example/EAExample.unity", onLoadScene);
     }
 
     void onLoadScene()
@@ -43,7 +43,7 @@ public class EAUpdate : MonoBehaviour
     private void OnGUI()
     {
         GUILayout.Label("进度: " + (downloadProgress * 100).ToString("0") + "%");
-        GUILayout.Label("下载速度: " + (BundleDownloadManager.Instance.downloadSpeed / 1024) + "KB/s");
+        GUILayout.Label("下载速度: " + Utils.FormatBytesUnit(BundleDownloadManager.Instance.downloadSpeed) + "/s");
     }
 
     private void OnDestroy()
