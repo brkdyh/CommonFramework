@@ -163,8 +163,11 @@
     }
 ```
 
+	
  ### 1.4.5 下载信息
- * 调用***BundleDownloadManager(单例)***的字段获取下载相关的信息
+ * 调用**BundleDownloadManager(单例)**的字段获取下载相关的信息
+
+
 |接口|说明|
 |---|---|
 |currentStep|当前下载的第N个文件|
