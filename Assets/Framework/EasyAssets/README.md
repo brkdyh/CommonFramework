@@ -144,7 +144,7 @@
 ```c#
     public class BundleCheck : Singleton<BundleCheck>
     {
-	      /// <summary>
+	/// <summary>
         /// 设置Bundle文件下载失败回调方法
         /// </summary>
         /// <param name="onDownloadError"></param>
@@ -157,9 +157,9 @@
     public class BundleCheck : Singleton<BundleCheck>
     {
         /// <summary>
-    		/// 重置当前下载请求状态，可以重新开始下载。
-    		/// </summary>
-    		public static bool ResetCurrentRequest()
+    	/// 重置当前下载请求状态，可以重新开始下载。
+    	/// </summary>
+    	public static bool ResetCurrentRequest()
     }
 ```
 
@@ -222,14 +222,14 @@
 	public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 	{
 	  /// <summary>
-    /// 同步加载资源
-    /// </summary>
-    /// <typeparam name="T">资源类型</typeparam>
-    /// <param name="assetPath">资源路径</param>
-    /// <param name="referenceObject">引用对象</param>
-    /// <returns></returns>
-    public static T LoadAsset<T>(string assetPath, object referenceObject)
-        where T : UnityEngine.Object
+    	  /// 同步加载资源
+    	  /// </summary>
+    	  /// <typeparam name="T">资源类型</typeparam>
+    	  /// <param name="assetPath">资源路径</param>
+    	  /// <param name="referenceObject">引用对象</param>
+    	  /// <returns></returns>
+    	  public static T LoadAsset<T>(string assetPath, object referenceObject)
+        	where T : UnityEngine.Object
 	}
 ```
 
@@ -259,7 +259,7 @@
 ```c#
 	public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 	{
-      public static void LoadGameobjectAsync(string assetPath, Action<GameObject> onFinish, Transform parent = null)
+      	    public static void LoadGameobjectAsync(string assetPath, Action<GameObject> onFinish, Transform parent = null)
 	}
 ```
 
@@ -270,11 +270,11 @@
 	public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 	{
 	  /// <summary>
-    /// 记录资源的引用
-    /// </summary>
-    /// <param name="asset"></param>
-    /// <param name="refrence"></param>
-    public static void TrackingAsset(object asset, object refrence)
+    	  /// 记录资源的引用
+    	  /// </summary>
+    	  /// <param name="asset"></param>
+    	  /// <param name="refrence"></param>
+    	  public static void TrackingAsset(object asset, object refrence)
 	}
 ```
 * 加载了**外部资源**却未正确设置其引用，可能会导致该资源被提前卸载。请确保在必要的时候添加对已加载资源的引用。
@@ -288,13 +288,13 @@
 ```c#
 	public class EAExample : MonoBehaviour
 	{
-		private void Awake()
-    {//加载外部GameObject---方式1
+	  private void Awake()
+    	  {//加载外部GameObject---方式1
       
-			var go = AssetMaintainer.LoadGameobject("assets/framework/easyassets/example/resources/cube.prefab");
-			go.name = "External Cube 1.1";
-    	/*使用这种方式加载的GameObject不需设置引用，资源管理器会自动将新实例化的GameObject添加引用*/
-    }
+		var go = AssetMaintainer.LoadGameobject("assets/framework/easyassets/example/resources/cube.prefab");
+		go.name = "External Cube 1.1";
+    		/*使用这种方式加载的GameObject不需设置引用，资源管理器会自动将新实例化的GameObject添加引用*/
+    	  }
 	}
 ```
 
@@ -303,17 +303,17 @@
 ```c#
 	public class EAExample : MonoBehaviour
 	{//加载外部GameObject---方式2
-    private void Awake()
-    { 
-    	//加载Prefab资源，保存引用
-			var temp = AssetMaintainer.LoadAsset<GameObject>("assets/framework/easyassets"
-			+"/example/resources/cube.prefab", this);
-			var new_go = Instantiate(temp);
-    	//实例化GameObject
-			new_go.name = "External Cube 2";
-    	//添加对该资源的引用
-			AssetMaintainer.TrackingAsset(temp, new_go);
-    }
+    	 private void Awake()
+    	 { 
+    	   //加载Prefab资源，保存引用
+	   var temp = AssetMaintainer.LoadAsset<GameObject>("assets/framework/easyassets"
+	   +"/example/resources/cube.prefab", this);
+	   var new_go = Instantiate(temp);
+    	   //实例化GameObject
+	   new_go.name = "External Cube 2";
+    	   //添加对该资源的引用
+	   AssetMaintainer.TrackingAsset(temp, new_go);
+    	  }
 	}
 ```
 
@@ -327,10 +327,10 @@
 	public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 	{
 	  /// <summary>
-    /// 手动卸载Bundle对象，调用该方法会卸载Asset Bundle对象，不会释放已加载的资源。
-    /// </summary>
-    /// <param name="bundleName"></param>
-    public static void UnloadBundle(string bundleName)
+    	  /// 手动卸载Bundle对象，调用该方法会卸载Asset Bundle对象，不会释放已加载的资源。
+    	  /// </summary>
+    	  /// <param name="bundleName"></param>
+    	  public static void UnloadBundle(string bundleName)
 	}
 ```
 
@@ -339,11 +339,11 @@
 	public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 	{
 	  /// <summary>
-    /// 手动释放Bundle对象,调用该方法会卸载Asset Bundle对象，并释放所有已加载的资源。
-    /// (仅对非托管的Bundle对象有效)
-    /// </summary>
-    /// <param name="bundleName"></param>
-    public static void ReleaseBundle(string bundleName)
+          /// 手动释放Bundle对象,调用该方法会卸载Asset Bundle对象，并释放所有已加载的资源。
+    	  /// (仅对非托管的Bundle对象有效)
+    	  /// </summary>
+    	  /// <param name="bundleName"></param>
+    	  public static void ReleaseBundle(string bundleName)
 	}
 ```
 
