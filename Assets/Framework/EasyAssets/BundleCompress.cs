@@ -101,10 +101,12 @@ namespace EasyAsset
 
         static void HandleZip()
         {
+            FileStream zip_fs = null;
+            FileStream bd_fs = null;
             try
             {
                 //保存ZIP
-                var zip_fs = File.Create(zipPath);
+                zip_fs = File.Create(zipPath);
                 var data = dataMemoryStream.ToArray();
                 zip_fs.Write(data, 0, data.Length);
                 zip_fs.Flush();
@@ -114,7 +116,7 @@ namespace EasyAsset
                     File.Delete(outPath);
 
                 var bd_length = 0l;
-                var bd_fs = File.Create(outPath);
+                bd_fs = File.Create(outPath);
                 //读取ZIP
                 while (true)
                 {
@@ -150,6 +152,11 @@ namespace EasyAsset
             }
             catch (Exception ex)
             {
+                if (zip_fs != null)
+                    zip_fs.Close();
+                if (bd_fs != null)
+                    bd_fs.Close();
+
                 handleZipFailed = true;
                 Debug.LogException(ex);
                 return;
