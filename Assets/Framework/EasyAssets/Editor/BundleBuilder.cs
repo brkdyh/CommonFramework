@@ -35,7 +35,6 @@ namespace EasyAsset
 
         public void Init()
         { 
-            var config = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(EditorDefiner.EditorPath + "/Resources/EasyAssetConfig.asset");
             minSize = new Vector2(480, 400);
             title = "打包管理器";
 
@@ -53,10 +52,12 @@ namespace EasyAsset
         public string buildRootPath = "";
         public string buildPath { get { return buildRootPath + "/" + buildVersion + "/" + curTarget.ToString(); } }
         bool copyToPersistentPath = false;
+        bool remainMainfestFile = false;
         string buildVersion = "0.0.1_0";
 
         string version;
         int buildNumber;
+        bool openCompress;
         private void OnGUI()
         {
             GUILayout.Space(10);
@@ -100,6 +101,8 @@ namespace EasyAsset
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 copyToPersistentPath = GUILayout.Toggle(copyToPersistentPath, "输出到本地");
+                GUILayout.Space(50);
+                remainMainfestFile = GUILayout.Toggle(remainMainfestFile, "保留.mainfest文件");
                 //GUILayout.FlexibleSpace();
                 //buildBundleList = GUILayout.Toggle(buildBundleList, "生成Bundle信息");
                 GUILayout.FlexibleSpace();
@@ -110,18 +113,7 @@ namespace EasyAsset
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("构建AssetBundle", GUILayout.MaxWidth(position.width - 150)))
                 {
-                    BuildBundle();
-                    GenAssetList();
-                    GenBuildInScene();
-                    //if (buildBundleList)
-                    GenBundleInfo();
-
-                    if (copyToPersistentPath)
-                        CopyToPersistentPath();
-
-                    CopyToInternalPath();
-
-                    System.Diagnostics.Process.Start(buildPath);
+                    DoBuild();
                     return;
                 }
 
@@ -143,6 +135,24 @@ namespace EasyAsset
             GUILayout.Space(10);
         }
 
+        //执行Build
+        void DoBuild()
+        {
+            BuildBundle();
+            GenAssetList();
+            GenBuildInScene();
+            CompressBundle();
+            GenBundleInfo();
+
+            if (copyToPersistentPath)
+                CopyToPersistentPath();
+
+            CopyToInternalPath();
+
+            System.Diagnostics.Process.Start(buildPath);
+        }
+
+        //构建Bundle
         void BuildBundle()
         {
             if (Directory.Exists(buildPath))
@@ -151,6 +161,27 @@ namespace EasyAsset
 
             //打包AssetBundle
             BuildPipeline.BuildAssetBundles(buildPath, BuildAssetBundleOptions.UncompressedAssetBundle, curTarget);
+        }
+
+        //压缩Bundle
+        void CompressBundle()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(EditorDefiner.EditorPath + "/Resources/EasyAssetConfig.asset");
+            openCompress = config.OpenCompress;
+            if (openCompress)
+            {
+                string[] files = Directory.GetFiles(buildPath, "*.*", SearchOption.AllDirectories);
+                foreach (var file in files)
+                {
+                    if (file.Contains(".manifest") ||
+                        file.Contains(EASY_DEFINE.ASSET_LIST_FILE) ||
+                        file.Contains(EASY_DEFINE.BUILDIN_SCENES_FILE))
+                        continue;
+                    var fileName = Path.GetFileName(file);
+                    var zip_file_path = buildPath + "/" + fileName + ".zip";
+                    BundleCompress.Compress(file, zip_file_path);
+                }
+            }
         }
 
         //生成资源清单
@@ -243,22 +274,63 @@ namespace EasyAsset
                     long total_file_size = 0;
                     int total_file_count = 0;
                     string[] files = Directory.GetFiles(buildPath, "*.*", SearchOption.AllDirectories);
+
+                    if (openCompress)
+                        sw.WriteLine("#OpenCompress");
+
+                    sw.WriteLine("/**** Begin Update ****/");
+                    List<string> raw_files = new List<string>();
                     foreach (var file in files)
                     {
-                        if (file.Contains(".manifest") ||
-                            file.Contains(EASY_DEFINE.BUNDLE_INFO_FILE))
+                        if (file.Contains(".manifest"))
+                        {
+                            if (!remainMainfestFile)
+                                File.Delete(file);
                             continue;
+                        }
+                        if (file.Contains(EASY_DEFINE.BUNDLE_INFO_FILE))
+                            continue;
+
+                        if (openCompress)
+                        {
+                            if (!file.Contains(".zip")
+                                && !file.Contains(".bytes"))
+                            {
+                                raw_files.Add(file);
+                                continue;
+                            }
+                        }
 
                         string md5 = Utils.GetMD5(file);
                         string fileName = Path.GetFileName(file);
                         long fileSize = new FileInfo(file).Length;
-                        sw.WriteLine(fileName + ":" + md5 + ":" + fileSize);
+                        string compressed = "Uncompressed";
+                        if (!fileName.Contains(".bytes") && openCompress)
+                            compressed = "Compressed";
+
+                        sw.WriteLine(fileName + ":" + md5 + ":" + fileSize + ":" + compressed);
                         total_file_size += fileSize;
                         total_file_count++;
                     }
+                    sw.WriteLine("/**** End Update ****/");
 
                     sw.WriteLine("#total_file_size:" + total_file_size);
                     sw.WriteLine("#total_file_count:" + total_file_count);
+
+                    if (raw_files.Count > 0)
+                    {
+                        //记录文件原始信息
+                        sw.WriteLine("/**** Begin Raw Bundle ****/");
+                        foreach (var raw in raw_files)
+                        {
+                            string md5 = Utils.GetMD5(raw);
+                            string fileName = Path.GetFileName(raw);
+                            long fileSize = new FileInfo(raw).Length;
+                            sw.WriteLine("=" + fileName + ":" + md5 + ":" + fileSize);
+                            File.Delete(raw);
+                        }
+                        sw.WriteLine("/**** End Raw Bundle ****/");
+                    }
 
                     sw.Flush();
                     sw.Close();
@@ -270,6 +342,7 @@ namespace EasyAsset
             }
         }
 
+        //拷贝生成的清单信息到本地
         void CopyToInternalPath()
         {
             var dir = Application.dataPath + "/Resources/";
@@ -290,6 +363,7 @@ namespace EasyAsset
             AssetDatabase.SaveAssets();
         }
 
+        //拷贝到本地沙盒路径
         void CopyToPersistentPath()
         {
             var config = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(EditorDefiner.EditorPath + "/Resources/EasyAssetConfig.asset");

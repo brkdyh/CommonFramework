@@ -134,13 +134,23 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
 #endif
 
                 currentStatus = Status.Writing;
-                //开始写入文件
                 var path = PathHelper.EXTERNAL_ASSET_PATH + currentRequest.bundleName;
                 if (File.Exists(path))
                     File.Delete(path);
-                curFile = File.Create(path);
-                curFile.BeginWrite(currentRequest.data, 0, currentRequest.data.Length, onWriteFile, null);
-                Debug.Log("开始写入文件 : " + currentRequest.bundleName + "\n at " + path);
+
+                if (!currentRequest.needDecompress)
+                {//开始写入文件
+                    curFile = File.Create(path);
+                    curFile.BeginWrite(currentRequest.data, 0, currentRequest.data.Length, onWriteFile, null);
+                    Debug.Log("开始写入文件 : " + currentRequest.bundleName + "\n at " + path);
+                }
+                else
+                {//开始解压文件
+                    string extention = Path.GetExtension(path);
+                    var bundle_path = path.Replace(extention, "");
+                    BundleCompress.BeginDecompress(currentRequest.data, path, bundle_path, onDecompress);
+                    Debug.Log("开始解压文件 : " + currentRequest.bundleName + "\n at " + bundle_path);
+                }
             }
             else
             {//更新下载进度
@@ -176,9 +186,36 @@ public class BundleDownloadManager : MonoSingleton<BundleDownloadManager>
         currentStatus = Status.CheckNext;//检测下一项
     }
 
+    void onDecompress(BundleDecompressResult result, string outPath)
+    {
+        if (result != BundleDecompressResult.Succeed)
+        {
+            Debug.LogErrorFormat("{0} Decompress Failed,error = {1} , url = {2}",
+            currentRequest.bundleName, result.ToString(), currentRequest.url);
+            currentRequest.SetDecompressError(result.ToString());
+            currentStatus = Status.Pause;
+            try
+            {//调用下载错误回调
+                onDownloadErrorCB?.Invoke(currentRequest);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return;
+        }
+
+        Debug.Log("完成解压文件 : " + currentRequest.bundleName);
+        currentRequest.Dispose();
+        currentRequest = null;
+
+        currentStatus = Status.CheckNext;//检测下一项
+    }
+
     private void Update()
     {
         TickDownload();
+        BundleCompress.Tick();
     }
 
     Action<float> onProgressCB;

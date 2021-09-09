@@ -19,6 +19,7 @@ public class MonoSingleton<T> : MonoBehaviour
             var go = new GameObject(typeof(T).ToString());
             GameObject.DontDestroyOnLoad(go);
             _singleton = go.AddComponent<T>();
+            (_singleton as MonoSingleton<T>).onGetInstance();
             return _singleton;
         }
     }
@@ -31,5 +32,10 @@ public class MonoSingleton<T> : MonoBehaviour
         }
 
         _singleton = null;
+    }
+
+    protected virtual void onGetInstance()
+    {
+
     }
 }

@@ -83,7 +83,8 @@ namespace EasyAsset
             config.RequestTimeOut = EditorGUILayout.FloatField("下载请求超时时间(单位 s):", config.RequestTimeOut);
             GUILayout.Space(5);
             config.bundleCheckMode = (Setting.BundleCheckMode)EditorGUILayout.EnumPopup("Bundle验证方式:", config.bundleCheckMode);
-
+            GUILayout.Space(5);
+            config.OpenCompress = EditorGUILayout.Toggle("是否开启Bundle压缩:", config.OpenCompress);
             GUILayout.EndVertical();
             if (EditorGUI.EndChangeCheck())
             {

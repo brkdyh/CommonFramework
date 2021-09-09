@@ -26,5 +26,7 @@ namespace EasyAsset
         public float RequestTimeOut = 60;       //download request time out
         [HideInInspector]
         public Setting.BundleCheckMode bundleCheckMode = Setting.BundleCheckMode.MD5;
+        [HideInInspector]
+        public bool OpenCompress = false;
     }
 }

@@ -59,7 +59,7 @@ namespace EasyAsset
         {
             get
             {
-                if (isTimeOut)
+                if (isTimeOut || !string.IsNullOrEmpty(decompressError))
                     return true;
                 return webRequest == null ? false : webRequest.isNetworkError || webRequest.isHttpError;
             }
@@ -71,6 +71,8 @@ namespace EasyAsset
             {
                 if (isTimeOut)
                     return "Request Time Out";
+                if (!string.IsNullOrEmpty(decompressError))
+                    return decompressError;
                 return webRequest == null ? "Null Web Request" : webRequest.error;
             }
         }
@@ -86,11 +88,14 @@ namespace EasyAsset
 
         float _timeOutCounter = 0;
         bool isTimeOut = false; //是否超时
+        string decompressError = "";  //解压失败
+        public void SetDecompressError(string error) { decompressError = error; }
 
         public System.DateTime beginDownloadTime { get; private set; }        //开始下载时间
 
         public void BeginDownload()
         {
+            decompressError = "";
             _timeOutCounter = 0;
             isTimeOut = false;
             webRequest = new UnityWebRequest(url);
@@ -132,6 +137,8 @@ namespace EasyAsset
             }
         }
 
+        public bool needDecompress { get; private set; } = false;
+
         public void Dispose()
         {
             if (webRequest != null)
@@ -145,7 +152,7 @@ namespace EasyAsset
             BeginDownload();
         }
 
-        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5, string url, long bundleSize, bool enableCheck)
+        public static BundleDownloadRequest CreateRequest(string bundleName, string bundleMD5, string url, long bundleSize, bool enableCheck,bool needDecompress)
         {
             BundleDownloadRequest req = new BundleDownloadRequest();
             req.bundleName = bundleName;
@@ -153,12 +160,13 @@ namespace EasyAsset
             req.url = url;
             req.bundleSize = bundleSize;
             req.enableCheck = enableCheck;
+            req.needDecompress = needDecompress;
             return req;
         }
 
         public static BundleDownloadRequest CreateRequest(UpdateBundle updateBundle)
         {
-            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url, updateBundle.bundleSize, updateBundle.enableCheck);
+            return CreateRequest(updateBundle.bundleName, updateBundle.md5, updateBundle.url, updateBundle.bundleSize, updateBundle.enableCheck, updateBundle.compressed);
         }
     }
 }
