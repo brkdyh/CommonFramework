@@ -20,13 +20,14 @@ namespace EasyAsset
 
     public class BundleCompress
     {
-        public static void Compress(string filePath, string outPath)
+        public static void Compress(string filePath, string outPath, string password)
         {
             var fileName = Path.GetFileName(filePath);
             ZipEntry zipEntry = new ZipEntry(fileName);
             zipEntry.DateTime = DateTime.Now;
             using (ZipOutputStream zipOut = new ZipOutputStream(File.Create(outPath)))
             {
+                zipOut.Password = password;
                 zipOut.PutNextEntry(zipEntry);
                 using (var fs = File.OpenRead(filePath))
                 {
@@ -70,7 +71,7 @@ namespace EasyAsset
             handleZipFinish = false;
         }
 
-        public static void BeginDecompress(byte[] data, string zipPath, string outPath, Action<BundleDecompressResult, string> onDecopress)
+        public static void BeginDecompress(byte[] data, string zipPath, string outPath,Action<BundleDecompressResult, string> onDecopress)
         {
             if (isDecompressing)
             {
@@ -85,6 +86,7 @@ namespace EasyAsset
             dataMemoryStream = new MemoryStream(data);
             ZipEntry zipEntry = null;
             currentInputStream = new ZipInputStream(dataMemoryStream);
+            currentInputStream.Password = Setting.config.CompressPassword;
             if (null != (zipEntry = currentInputStream.GetNextEntry()))
             {
                 if (string.IsNullOrEmpty(zipEntry.Name))

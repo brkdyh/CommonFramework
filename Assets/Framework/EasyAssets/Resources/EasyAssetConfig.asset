@@ -21,3 +21,4 @@ MonoBehaviour:
   RequestTimeOut: 30
   bundleCheckMode: 1
   OpenCompress: 1
+  CompressPassword: 

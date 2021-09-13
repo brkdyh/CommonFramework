@@ -179,7 +179,7 @@ namespace EasyAsset
                         continue;
                     var fileName = Path.GetFileName(file);
                     var zip_file_path = buildPath + "/" + fileName + ".zip";
-                    BundleCompress.Compress(file, zip_file_path);
+                    BundleCompress.Compress(file, zip_file_path, config.CompressPassword);
                 }
             }
         }

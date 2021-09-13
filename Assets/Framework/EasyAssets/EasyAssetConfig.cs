@@ -28,5 +28,7 @@ namespace EasyAsset
         public Setting.BundleCheckMode bundleCheckMode = Setting.BundleCheckMode.MD5;
         [HideInInspector]
         public bool OpenCompress = false;
+        [HideInInspector]
+        public string CompressPassword = "";
     }
 }
