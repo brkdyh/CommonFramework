@@ -144,7 +144,7 @@ public class UIMgr : MonoSingleton<UIMgr>
 
         if (!ContainUI(uiName))
         {
-#if USE_EASYASSET
+#if USE_EASYASSETS
             var go = AssetMaintainer.LoadGameobject((uiPath == "" ? UI_Root_Path : uiPath) + uiName, parent);
 #else
             var go = Instantiate(Resources.Load(UI_Root_Path + uiName) as GameObject, parent);
@@ -294,11 +294,12 @@ public class UIMgr : MonoSingleton<UIMgr>
     public static void ChangeLoadMode()
     {
         string defines = UnityEditor.PlayerSettings.GetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone);
-        if (defines.Contains("USE_EASYASSET"))
+        if (defines.Contains("USE_EASYASSETS"))
         {
             if (UnityEditor.EditorUtility.DisplayDialog("修改加载方式", "正在使用 EasyAsset 加载UI资源，是否改为使用 Resources 加载?", "修改", "取消"))
             {
-                defines = defines.Replace("USE_EASYASSET;", "");
+                defines = defines.Replace("USE_EASYASSETS;", "");
+                defines = defines.Replace("USE_EASYASSETS", "");
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone, defines);
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Android, defines);
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.iOS, defines);
@@ -310,11 +311,11 @@ public class UIMgr : MonoSingleton<UIMgr>
             if (UnityEditor.EditorUtility.DisplayDialog("修改加载方式", "正在使用 Resources 加载UI资源，是否改为使用 EasyAsset 加载?", "修改", "取消"))
             {
                 if (defines == "")
-                    defines = defines + "USE_EASYASSET;";
+                    defines = defines + "USE_EASYASSETS;";
                 else if (defines.EndsWith(";"))
-                    defines = defines + "USE_EASYASSET;";
+                    defines = defines + "USE_EASYASSETS;";
                 else
-                    defines = ";USE_EASYASSET;";
+                    defines = ";USE_EASYASSETS;";
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Standalone, defines);
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.Android, defines);
                 UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(UnityEditor.BuildTargetGroup.iOS, defines);
