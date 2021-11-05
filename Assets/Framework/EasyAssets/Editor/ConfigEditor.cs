@@ -30,6 +30,17 @@ namespace EasyAssets
 
             GUILayout.Space(5);
             GUILayout.BeginVertical("box");
+            GUILayout.Label("资源打包设置:", EA_GUIStyle.mid_label);
+            config.OpenCompress = EditorGUILayout.Toggle("是否开启Bundle压缩:", config.OpenCompress);
+            if (config.OpenCompress)
+            {
+                GUILayout.Space(5);
+                config.CompressPassword = EditorGUILayout.TextField("Bundle压缩密码:", config.CompressPassword);
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+            GUILayout.BeginVertical("box");
             GUILayout.Label("资源管理器设置:", EA_GUIStyle.mid_label);
             GUILayout.Space(5);
             config.LoadPath = EditorGUILayout.TextField("外部资源加载路径:", config.LoadPath);
@@ -84,12 +95,6 @@ namespace EasyAssets
             GUILayout.Space(5);
             config.bundleCheckMode = (Setting.BundleCheckMode)EditorGUILayout.EnumPopup("Bundle验证方式:", config.bundleCheckMode);
             GUILayout.Space(15);
-            config.OpenCompress = EditorGUILayout.Toggle("是否开启Bundle压缩:", config.OpenCompress);
-            if (config.OpenCompress)
-            {
-                GUILayout.Space(5);
-                config.CompressPassword = EditorGUILayout.TextField("Bundle压缩密码:", config.CompressPassword);
-            }
             GUILayout.EndVertical();
             if (EditorGUI.EndChangeCheck())
             {
