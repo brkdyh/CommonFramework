@@ -51,5 +51,45 @@ namespace EasyAssets
             else
                 return (byteLength / GB).ToString(format) + "GB";
         }
+
+        public struct VersionStruct
+        {
+            public int v1;
+            public int v2;
+            public int v3;
+            public int build;
+
+            public static VersionStruct From(string str)
+            {
+                VersionStruct vs = new VersionStruct();
+                var sps = str.Split('_');
+                var versions_str = sps[0].Split('.');
+                var build_str = sps[1];
+                vs.v1 = int.Parse(versions_str[0]);
+                vs.v2 = int.Parse(versions_str[1]);
+                vs.v3 = int.Parse(versions_str[2]);
+                vs.build = int.Parse(build_str);
+                return vs;
+            }
+
+            public static bool LessThan(VersionStruct version, VersionStruct compare)
+            {
+                if (version.v1 < compare.v1)
+                    return true;
+                if (version.v2 < compare.v2)
+                    return true;
+                if (version.v3 < compare.v3)
+                    return true;
+                if (version.build < compare.build)
+                    return true;
+
+                return false;
+            }
+        }
+
+        public static bool VersionLessThan(string version, string compare)
+        {
+            return VersionStruct.LessThan(VersionStruct.From(version), VersionStruct.From(compare));
+        }
     }
 }

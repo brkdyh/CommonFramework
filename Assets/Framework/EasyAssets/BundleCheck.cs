@@ -172,9 +172,18 @@ namespace EasyAssets
 
         #region 本地
 
-        public BundleInfo localBundleInfo;
+        public BundleInfo localBundleInfo;          //本地BundleInfo
+
+        public BundleInfo buildBundleInfo;          //随包BundleInfo
+
         void LoadLocalBundleInfo()
         {
+            var ta = Resources.Load<TextAsset>(EASY_DEFINE.BUNDLE_INFO_NAME);
+            if (ta == null)
+                return;
+
+            buildBundleInfo = LoadBundleInfo(ta.bytes);
+
             localBundleInfo = new BundleInfo();
 
             string localBundleInfoPath = PathHelper.EXTERNAL_ASSET_PATH + EASY_DEFINE.BUNDLE_INFO_FILE;
@@ -184,6 +193,9 @@ namespace EasyAssets
                 try
                 {
                     localBundleInfo.LoadBundleInfo(sr);
+                    if (Utils.VersionLessThan(localBundleInfo.buildVersion, buildBundleInfo.buildVersion))
+                        localBundleInfo = LoadBundleInfo(ta.bytes);
+
                     return;
                 }
                 catch (Exception ex)
@@ -195,10 +207,6 @@ namespace EasyAssets
                     Debug.LogException(ex);
                 }
             }
-
-            var ta = Resources.Load<TextAsset>(EASY_DEFINE.BUNDLE_INFO_NAME);
-            if (ta == null)
-                return;
 
             localBundleInfo = LoadBundleInfo(ta.bytes);
         }
