@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     [CreateAssetMenu]
     public class EasyAssetConfig : ScriptableObject

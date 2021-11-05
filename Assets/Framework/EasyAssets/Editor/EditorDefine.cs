@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     public static class EditorDefiner
     {

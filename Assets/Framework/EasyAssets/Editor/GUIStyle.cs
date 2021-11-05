@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-namespace EasyAsset
+namespace EasyAssets
 {
     public class EA_GUIStyle
     {

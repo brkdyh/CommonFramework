@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     /// <summary>
     /// 交集分析器

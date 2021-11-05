@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     /// <summary>
     /// 资源清单

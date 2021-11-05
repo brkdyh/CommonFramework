@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     [CustomEditor(typeof(EasyAssetConfig))]
     public class ConfigEditor : Editor

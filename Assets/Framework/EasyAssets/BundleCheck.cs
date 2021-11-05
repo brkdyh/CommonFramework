@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using System.Text;
-using EasyAsset;
 using System;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     public class BundleInfo
     {

@@ -4,7 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using UnityEngine;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     public static class Utils
     {

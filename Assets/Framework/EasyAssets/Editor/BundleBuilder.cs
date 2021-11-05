@@ -6,7 +6,7 @@ using UnityEditor;
 using System;
 using System.Text;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     /// <summary>
     /// 打包管理器

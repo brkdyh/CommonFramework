@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using EasyAsset;
+using EasyAssets;
 using System;
 using System.IO;
 

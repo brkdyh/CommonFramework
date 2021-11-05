@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using EasyAsset;
+using EasyAssets;
 
 public class EAExampleEditor
 {

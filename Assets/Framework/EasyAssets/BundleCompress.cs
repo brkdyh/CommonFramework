@@ -7,7 +7,7 @@ using UnityEditor;
 using System;
 using System.Threading;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     public enum BundleDecompressResult
     {

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System;
-using EasyAsset;
+using EasyAssets;
 using System.Text;
 using UnityEngine.SceneManagement;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     /// <summary>
     /// Bundle加载轨迹

@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using System.ComponentModel;
 
-namespace EasyAsset
+namespace EasyAssets
 {
     [CustomEditor(typeof(BundleDownloadManager))]
     public class DownloadEditor : Editor

@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using EasyAsset.EditorCoroutines;
 
-namespace EasyAsset
+namespace EasyAssets
 {
 
     public class BaseAnalysis
