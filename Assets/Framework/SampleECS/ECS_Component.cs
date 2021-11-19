@@ -1,0 +1,132 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System;
+
+namespace SampleECS
+{
+    //public interface IECS_Component
+    //{
+
+    //}
+
+    /// <summary>
+    /// 简易ECS框架-Component
+    /// </summary>
+    public struct ECS_Component_Data<T>
+        where T : struct
+    {
+        public string name;
+        public uint uid;
+        public string type;
+        public T user_struct;
+
+        bool _dirty;
+        public void setDirty(bool dirty) { _dirty = dirty; }
+        public bool getDirty() { return _dirty; }
+    }
+
+    public interface IECS_Component_Pool
+    {
+        int NewComponent();
+        int NewComponent(object com);
+        object FindComponent(int idx);
+        //void SetCompoent(int idx, object com);
+    }
+
+    /// <summary>
+    /// 组件对象池
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class ECS_Component_Pool<T> : IECS_Component_Pool
+        where T : struct
+    {
+        static ECS_Component_Pool<T>[] context_pools = new ECS_Component_Pool<T>[0];
+
+        ECS_Component_Data<T>[] use_coms = new ECS_Component_Data<T>[32];
+        int use_com_ptr = -1;
+
+        ECS_Component_Data<T>[] available_coms = new ECS_Component_Data<T>[32];
+        int available_com_ptr = -1;
+
+        public static ECS_Component_Pool<T> GetPool(int context_idx, Type data_type)
+        {
+            if (context_idx >= context_pools.Length
+                || context_pools[context_idx] == null)
+            {
+                var type = typeof(ECS_Component_Pool<>);
+                var g_type = type.MakeGenericType(data_type);
+                ECS_Component_Pool<T> pool = Activator.CreateInstance(g_type) as ECS_Component_Pool<T>;
+                ECS_Utils.SetArrayElement(ref context_pools, context_idx, pool);
+            }
+
+            return context_pools[context_idx];
+        }
+
+        public int NewComponent(T user_struct)
+        {
+            ECS_Component_Data<T> new_com;
+            if (available_com_ptr > 0)
+            {
+                new_com = available_coms[available_com_ptr];
+                available_com_ptr--;
+            }
+            else
+            {
+                new_com = new ECS_Component_Data<T>();
+                new_com.uid = ECS_Utils.ApplyUID();
+                var type_str = typeof(T).ToString();
+                new_com.name = type_str;
+                new_com.type = type_str;
+                new_com.user_struct = user_struct;
+            }
+
+            use_com_ptr++;
+            ECS_Utils.SetArrayElement(ref use_coms, use_com_ptr, new_com);
+
+            return use_com_ptr;
+        }
+
+        public bool TryFindComponent(int idx, out T com)
+        {
+            if (idx >= 0 && idx < use_coms.Length)
+            {
+                com = use_coms[idx].user_struct;
+                return true;
+            }
+            com = default;
+            return false;
+        }
+
+        public bool ContainIndex(int idx) { return idx >= 0 && idx <= use_com_ptr; }
+        public ref T FindComponentPtr(int idx)
+        {
+            return ref use_coms[idx].user_struct;
+        }
+
+        #region Impl Interface
+
+        public int NewComponent(object com)
+        {
+            if (com.GetType() != typeof(T))
+                return -1;
+
+            return NewComponent((T)com);
+        }
+
+        public int NewComponent()
+        {
+            return NewComponent(new T());
+        }
+
+        public object FindComponent(int idx)
+        {
+            T com;
+            if (TryFindComponent(idx, out com))
+                return com;
+            return null;
+        }
+
+        #endregion
+    }
+}
