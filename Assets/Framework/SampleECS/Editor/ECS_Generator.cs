@@ -60,10 +60,13 @@ namespace SampleECS
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
 				if (ca != null)
 				{
-                    //Component引用
-					entity_sctipt.AppendLine(string.Format("\t\tpublic {0} {1};", type, type.ToString().ToLower()));
+					string com_field = type.ToString().ToLower();
+					//Component引用
+					entity_sctipt.AppendLine(string.Format("\t\tpublic {0} {1};", type, com_field));
+                    //Has Component
+					entity_sctipt.AppendLine(string.Format("\t\tpublic Has_{0}()\t{}"));
 					//Add Component
-					entity_sctipt.AppendLine(string.Format("\t\tpublic void Add_{0}()\t{}", type));
+					entity_sctipt.AppendLine(string.Format("\t\tpublic void Add_{0}({1} com)\t{\tcom = {2};\t}", type, type, com_field));
 				}
 			}
 	        entity_sctipt.AppendLine("\t}");
