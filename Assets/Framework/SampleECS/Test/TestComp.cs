@@ -9,5 +9,5 @@ public struct TestComp
 {
     public int test_field;
     public Vector3 position;
-    public int[] ssa;
+    public GameObject go;
 }

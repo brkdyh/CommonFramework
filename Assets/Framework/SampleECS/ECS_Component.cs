@@ -21,9 +21,7 @@ namespace SampleECS
         public string type;
         public T user_struct;
 
-        bool _dirty;
-        public void setDirty(bool dirty) { _dirty = dirty; }
-        public bool getDirty() { return _dirty; }
+        public bool _dirty;
     }
 
     public interface IECS_Component_Pool
@@ -31,6 +29,7 @@ namespace SampleECS
         int NewComponent();
         int NewComponent(object com);
         object FindComponent(int idx);
+        void CleanDirtyMark();
         //void SetCompoent(int idx, object com);
     }
 
@@ -43,11 +42,14 @@ namespace SampleECS
     {
         static ECS_Component_Pool<T>[] context_pools = new ECS_Component_Pool<T>[0];
 
-        ECS_Component_Data<T>[] use_coms = new ECS_Component_Data<T>[32];
+        public ECS_Component_Data<T>[] use_coms = new ECS_Component_Data<T>[32];
         int use_com_ptr = -1;
 
-        ECS_Component_Data<T>[] available_coms = new ECS_Component_Data<T>[32];
+        public ECS_Component_Data<T>[] available_coms = new ECS_Component_Data<T>[32];
         int available_com_ptr = -1;
+
+        Stack<int> dirtyCache = new Stack<int>();
+
 
         public static ECS_Component_Pool<T> GetPool(int context_idx, Type data_type)
         {
@@ -104,6 +106,21 @@ namespace SampleECS
             return ref use_coms[idx].user_struct;
         }
 
+        public void SetDirty(int idx, T com)
+        {
+            if (idx >= 0 && idx < use_coms.Length)
+            {
+                if (!use_coms[idx]._dirty)
+                {
+                    dirtyCache.Push(idx);
+                    use_coms[idx]._dirty = true;
+                }
+
+                use_coms[idx].user_struct = com;
+                //Debug.Log(idx + " = " + ((TestComp)((object)use_coms[idx].user_struct)).go);
+            }
+        }
+
         #region Impl Interface
 
         public int NewComponent(object com)
@@ -125,6 +142,15 @@ namespace SampleECS
             if (TryFindComponent(idx, out com))
                 return com;
             return null;
+        }
+
+        public void CleanDirtyMark()
+        {
+            while (dirtyCache.Count > 0)
+            {
+                var idx = dirtyCache.Pop();
+                use_coms[idx]._dirty = false;
+            }
         }
 
         #endregion

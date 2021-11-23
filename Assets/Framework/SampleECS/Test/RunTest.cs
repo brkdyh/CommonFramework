@@ -2,41 +2,62 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
+using SampleECS;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 public class RunTest : MonoBehaviour
 {
-    int[] ds = new int[1000];
-
-    Dictionary<int, byte> kp = new Dictionary<int, byte>();
+    static int count = 10000;
+    ECS_Context context;
+    ECS_Entity[] es = new ECS_Entity[count];
     void Start()
     {
-        var rd_idx = Random.Range(0, 1000);
-        ds[rd_idx] = 100;
-        Debug.Log("random index = " + rd_idx);
-
-        for(int i = 0; i < 1000; i++)
-        {
-            kp.Add(i, 0);
-        }
+        //context = ECS_Context.CreateContext("game");
+        //for (int i = 0; i < count; i++)
+        //{
+        //    es[i] = context.CreateEntity();
+        //    TestComp com = new TestComp();
+        //    com.go = Object.Instantiate(Resources.Load<GameObject>("go"));
+        //    com.go.transform.position = new Vector3(i + Random.Range(-0.1f, 0.1f), (i / 500) + Random.Range(-0.1f, 0.1f), 0);
+        //    es[i].Add_TestComp(com);
+        //}
     }
 
     void Update()
     {
-        //每帧查找10万次
-        for (int i = 0; i < 100000; i++)
-        {
-            Profiler.BeginSample("S=>Array");
-            //for (int j = 0, l = ds.Length; j < l; j++)
-            //{
-            //    if (ds[j] == 100)
-            //        break;
-            //}
-            if ("dhsgfhsjghskfgjsjdhfskfjshf" == "dhsgfhsjghskfgjsjdhfskfjshf") ;
-            Profiler.EndSample();
+        //for (int i = 0; i < count; i++)
+        //{
+        //    var com = new TestComp();
+        //    com.go = es[i].testcomp.go;
+        //    com.position = new Vector3(i + Random.Range(-0.1f, 0.1f), (i / 500) + Random.Range(-0.1f, 0.1f), 0);
+        //    com.test_field = es[i].testcomp.test_field;
+        //    es[i].Replace_TestComp(com);
 
-            //Profiler.BeginSample("S=>Dictionary");
-            //kp.ContainsKey(100);
-            //Profiler.EndSample();
-        }
+        //    //es[i].testcomp.go.transform.position = new Vector3(i + Random.Range(-0.1f, 0.1f), (i / 500) + Random.Range(-0.1f, 0.1f), 0);
+        //}
+        //context.Tick();
+        //Stopwatch sw = new Stopwatch();
+        //sw.Start();
+        //for (int i = 0; i < 1000000; i++)
+        //{
+        //    Test();
+        //}
+        //sw.Stop();
+        //UnityEngine.Debug.Log(sw.ElapsedMilliseconds);
+    }
+
+    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void Test()
+    {
+        float s = 10;
+        int i = 99;
+        _ = i * s;
+        _ = i / s;
+    }
+
+    private void LateUpdate()
+    {
+        //context.LateTick();
     }
 }

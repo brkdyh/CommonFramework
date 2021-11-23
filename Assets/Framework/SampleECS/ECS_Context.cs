@@ -2,116 +2,119 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace SampleECS
 {
-    /// <summary>
-    /// 匹配条件
-    /// </summary>
-    public class ECS_Match
-    {
-        List<List<Type>> types;
-        Dictionary<string, byte> allTypes;
+    #region Obsulate
+    ///// <summary>
+    ///// 匹配条件
+    ///// </summary>
+    //public class ECS_Match
+    //{
+    //    List<List<Type>> types;
+    //    Dictionary<string, byte> allTypes;
 
-        int or_index;
+    //    int or_index;
 
-        public static ECS_Match operator |(ECS_Match m1, ECS_Match m2)
-        {
-            ECS_Match em = new ECS_Match(m1.types);
-            for (int i = 0; i < m2.types.Count; i++)
-            {
-                em.types.Add(new List<Type>());
-                em.types[em.or_index].AddRange(m2.types[i]);
-                em.or_index++;
-            }
-            em.SyncAllTypes();
-            return em;
-        }
+    //    public static ECS_Match operator |(ECS_Match m1, ECS_Match m2)
+    //    {
+    //        ECS_Match em = new ECS_Match(m1.types);
+    //        for (int i = 0; i < m2.types.Count; i++)
+    //        {
+    //            em.types.Add(new List<Type>());
+    //            em.types[em.or_index].AddRange(m2.types[i]);
+    //            em.or_index++;
+    //        }
+    //        em.SyncAllTypes();
+    //        return em;
+    //    }
 
-        public static ECS_Match operator &(ECS_Match m1, ECS_Match m2)
-        {
-            
-            List<List<Type>> nts = new List<List<Type>>();
+    //    public static ECS_Match operator &(ECS_Match m1, ECS_Match m2)
+    //    {
 
-            int count = Math.Max(m1.types.Count, m2.types.Count);
-            for (int i = 0; i < count; i++)
-            {
-                nts.Add(new List<Type>());
-                if (i < m1.types.Count)
-                    nts[i].AddRange(m1.types[i]);
-                if (i < m2.types.Count)
-                    nts[i].AddRange(m2.types[i]);
-            }
-            ECS_Match em = new ECS_Match(nts);
-            return em;
-        }
+    //        List<List<Type>> nts = new List<List<Type>>();
 
-        public ECS_Match(params Type[] types)
-        {
-            this.types = new List<List<Type>>();
-            this.types.Add(new List<Type>());
-            if (types != null && types.Length > 0)
-                this.types[0].AddRange(types);
+    //        int count = Math.Max(m1.types.Count, m2.types.Count);
+    //        for (int i = 0; i < count; i++)
+    //        {
+    //            nts.Add(new List<Type>());
+    //            if (i < m1.types.Count)
+    //                nts[i].AddRange(m1.types[i]);
+    //            if (i < m2.types.Count)
+    //                nts[i].AddRange(m2.types[i]);
+    //        }
+    //        ECS_Match em = new ECS_Match(nts);
+    //        return em;
+    //    }
 
-            or_index = this.types.Count;
-            allTypes = new Dictionary<string, byte>();
-            SyncAllTypes();
-        }
+    //    public ECS_Match(params Type[] types)
+    //    {
+    //        this.types = new List<List<Type>>();
+    //        this.types.Add(new List<Type>());
+    //        if (types != null && types.Length > 0)
+    //            this.types[0].AddRange(types);
 
-        private ECS_Match(List<List<Type>> types)
-        {
-            this.types = types;
-            or_index = this.types.Count;
+    //        or_index = this.types.Count;
+    //        allTypes = new Dictionary<string, byte>();
+    //        SyncAllTypes();
+    //    }
 
-            allTypes = new Dictionary<string, byte>();
-            SyncAllTypes();
-        }
+    //    private ECS_Match(List<List<Type>> types)
+    //    {
+    //        this.types = types;
+    //        or_index = this.types.Count;
 
-        void SyncAllTypes()
-        {
-            allTypes.Clear();
-            foreach (var tps in types)
-            {
-                foreach (var tp in tps)
-                {
-                    allTypes = new Dictionary<string, byte>();
-                    if (!allTypes.ContainsKey(tp.ToString()))
-                        allTypes.Add(tp.ToString(), 0);
-                }
-            }
-        }
+    //        allTypes = new Dictionary<string, byte>();
+    //        SyncAllTypes();
+    //    }
 
-        public bool MatchEntity(ECS_Entity entity)
-        {
-            bool result = false;
+    //    void SyncAllTypes()
+    //    {
+    //        allTypes.Clear();
+    //        foreach (var tps in types)
+    //        {
+    //            foreach (var tp in tps)
+    //            {
+    //                allTypes = new Dictionary<string, byte>();
+    //                if (!allTypes.ContainsKey(tp.ToString()))
+    //                    allTypes.Add(tp.ToString(), 0);
+    //            }
+    //        }
+    //    }
 
-            for (int i = 0; i < types.Count; i++)
-            {
-                bool ex_result = true; 
-                for (int j = 0; j < types[i].Count; j++)
-                {
-                    var tp = types[i][j];
-                    if (!entity.HasComponent(tp))
-                    {
-                        ex_result = false;
-                        break;
-                    }
-                }
+    //    public bool MatchEntity(ECS_Entity entity)
+    //    {
+    //        bool result = false;
 
-                result = result | ex_result;
-                if (result)
-                    break;
-            }
+    //        for (int i = 0; i < types.Count; i++)
+    //        {
+    //            bool ex_result = true; 
+    //            for (int j = 0; j < types[i].Count; j++)
+    //            {
+    //                var tp = types[i][j];
+    //                if (!entity.HasComponent(tp))
+    //                {
+    //                    ex_result = false;
+    //                    break;
+    //                }
+    //            }
 
-            return result;
-        }
+    //            result = result | ex_result;
+    //            if (result)
+    //                break;
+    //        }
 
-        public bool MatchComponentType(string type)
-        {
-            return allTypes.ContainsKey(type);
-        }
-    }
+    //        return result;
+    //    }
+
+    //    public bool MatchComponentType(string type)
+    //    {
+    //        return allTypes.ContainsKey(type);
+    //    }
+    //}
+    #endregion
 
     /// <summary>
     /// Entity集合
@@ -120,8 +123,10 @@ namespace SampleECS
     {
         Dictionary<uint, int> uid_idx_map = new Dictionary<uint, int>();
         int entity_Ptr = -1;
+        public int RealLength { get { return entity_Ptr + 1; } }
         ECS_Entity[] _entities = new ECS_Entity[0];
         public ECS_Entity[] entities { get { return _entities; } }
+        //public ECS_Entity[] limitEntities { get { return } }
         public void AddEntity(ECS_Entity entity)
         {
             if (!uid_idx_map.ContainsKey(entity.uid))
@@ -140,13 +145,21 @@ namespace SampleECS
 
         }
 
+        //public void FormatEntitySize()
+        //{
+        //    if (_entities.Length != RealLength)
+        //    {
+        //        Array.Resize(ref _entities, RealLength);
+        //    }
+        //}
+
         public bool ContainEntity(ECS_Entity entity) { return uid_idx_map.ContainsKey(entity.uid); }
     }
 
     /// <summary>
     /// ECS运行环境
     /// </summary>
-    public class ECS_Context
+    public partial class ECS_Context
     {
         #region  Container
 
@@ -161,10 +174,10 @@ namespace SampleECS
         int _context_idx = -1;
         public int context_idx { get { return _context_idx; } }
 
-        //组件池
-        //Dictionary<Type, IECS_Component_Pool> component_pool_container = new Dictionary<Type, IECS_Component_Pool>();
+        ////组件池
+        ////Dictionary<Type, IECS_Component_Pool> component_pool_container = new Dictionary<Type, IECS_Component_Pool>();
         public int component_pool_container_ptr = -1;
-        object[] component_pool_container = new object[0];
+        IECS_Component_Pool[] component_pool_container = new IECS_Component_Pool[0];
 
         //全体Entity容器
         ECS_Entity[] entity_container = new ECS_Entity[1024];
@@ -180,11 +193,11 @@ namespace SampleECS
         public static ECS_Context CreateContext(string context_name)
         {
             ECS_Context context = new ECS_Context();
+            context_ptr++;
+            context._context_idx = context_ptr;
             context.context_name = context_name;
             context.InitECSContext();
-            context_ptr++;
             ECS_Utils.SetArrayElement(ref context_container, context_ptr, context);
-            context._context_idx = context_ptr;
             return context;
         }
 
@@ -197,6 +210,9 @@ namespace SampleECS
 
         void InitECSContext()
         {
+            //Init Component Pools
+            typeof(ECS_Context).GetMethod("InitComPool").Invoke(this, new object[] { context_idx });
+
             //收集 System
             var asm_all_types = Assembly.GetAssembly(typeof(ECS_Context)).GetTypes();
             foreach (var type in asm_all_types)
@@ -216,27 +232,31 @@ namespace SampleECS
         {
             var uid = ECS_Utils.ApplyUID();
             ECS_Entity entity = new ECS_Entity(uid, _context_idx);
-            if (CollectEntity(entity))
+            if (AddEntity(entity))
                 return entity;
             return null;
+        }
+
+        bool AddEntity(ECS_Entity entity)
+        {
+            if (euid_idx_map.ContainsKey(entity.uid))
+                return false;
+            euid_idx_map.Add(entity.uid, entity_container_ptr);
+
+            entity_container_ptr++;
+            ECS_Utils.SetArrayElement(ref entity_container, entity_container_ptr, entity);
+
+            return CollectEntity(entity);
         }
 
         //收集Entity 到 EntityCollection 中 
         bool CollectEntity(ECS_Entity entity)
         {
-            if (euid_idx_map.ContainsKey(entity.uid))
-                return false;
-
-            entity_container_ptr++;
-            ECS_Utils.SetArrayElement(ref entity_container, entity_container_ptr, entity);
-            euid_idx_map.Add(entity.uid, entity_container_ptr);
-
             foreach (var sys_kp in systems_container)
             {
                 var sys = sys_kp.Value;
                 var collection = getSystemCollection(sys);
-                var match = sys.getMatch;
-                if (match.MatchEntity(entity))
+                if (sys.GetSystemMatch(entity))
                     collection.AddEntity(entity);
             }
 
@@ -329,8 +349,9 @@ namespace SampleECS
         }
 
 
-        int arr_excute_ptr = -1;
-        ECS_Entity[] excuteEntities = new ECS_Entity[1024];
+        //int arr_excute_ptr = -1;
+        //ECS_Entity[] excuteEntities = new ECS_Entity[1024];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ExcuteSystem(ECS_System system)
         {
             try
@@ -339,23 +360,26 @@ namespace SampleECS
                 ECS_Entity_Collections collection = null;
                 if (!system_collections.TryGetValue(type, out collection))
                     return;
-
+                var entities = collection.entities;
                 if (system.getSystemMode == SystemMode.Loop)
-                    system.Excute(collection.entities);
-                else if (system.getSystemMode == SystemMode.Action)
                 {
-                    arr_excute_ptr = -1;
-                    var len = collection.entities.Length;
+                    var len = collection.RealLength;
                     for (int i = 0; i < len; i++)
                     {
-                        var entity = collection.entities[i];
+                        system.Excute(entities[i]);
+                    }
+                }
+                else if (system.getSystemMode == SystemMode.Action)
+                {
+                    var len = collection.RealLength;
+                    for (int i = 0; i < len; i++)
+                    {
+                        var entity = entities[i];
                         if (system.GetTrigger(entity))
                         {
-                            arr_excute_ptr++;
-                            ECS_Utils.SetArrayElement(ref excuteEntities, arr_excute_ptr, entity);
+                            system.Excute(entity);
                         }
                     }
-                    system.Excute(excuteEntities);
                 }
 
             }
@@ -365,6 +389,7 @@ namespace SampleECS
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void DoExcute()
         {
             foreach (var sys in systems_container.Values)
@@ -373,14 +398,17 @@ namespace SampleECS
 
         #endregion
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Tick()
         {
             DoExcute();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LateTick()
         {
-
+            for (int i = 0, l = component_pool_container.Length; i < l; i++)
+                component_pool_container[i].CleanDirtyMark();
         }
     }
 

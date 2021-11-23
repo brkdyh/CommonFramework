@@ -129,9 +129,22 @@ namespace SampleECS
         {
             if (index >= array.Length)
             {
-                var new_size = (array.Length == 0 ? 1 : array.Length) * extendRate;
+                var new_size = array.Length == 0 ? 1 : (array.Length * extendRate);
                 Array.Resize<T>(ref array, new_size);
                 SetArrayElement<T>(ref array, index, element, extendRate);
+                return;
+            }
+
+            array[index] = element;
+        }
+
+        public static void SetArrayElementAddOne<T>(ref T[] array, int index, T element, byte extend = 1)
+        {
+            if (index >= array.Length)
+            {
+                var new_size = array.Length == 0 ? 1 : (array.Length + extend);
+                Array.Resize<T>(ref array, new_size);
+                SetArrayElement<T>(ref array, index, element, extend);
                 return;
             }
 

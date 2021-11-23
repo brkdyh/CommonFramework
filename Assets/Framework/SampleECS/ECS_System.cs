@@ -23,33 +23,43 @@ namespace SampleECS
         /// <summary>
         /// 系统执行方法
         /// </summary>
-        /// <param name="entities"></param>
-        public virtual void Excute(ECS_Entity[] entities)
+        /// <param name="entity"></param>
+        public virtual void Excute(ECS_Entity entity)
         {
 
         }
 
-        ECS_Match _match = null;
-        /// <summary>
-        /// 获取 System 的 Entity 匹配条件
-        /// </summary>
-        public ECS_Match getMatch
-        {
-            get
-            {
-                if (_match == null)
-                    _match = GetSystemMatch();
-                return _match;
-            }
-        }
+        //ECS_Match _match = null;
+        ///// <summary>
+        ///// 获取 System 的 Entity 匹配条件
+        ///// </summary>
+        //public ECS_Match getMatch
+        //{
+        //    get
+        //    {
+        //        if (_match == null)
+        //            _match = GetSystemMatch();
+        //        return _match;
+        //    }
+        //}
 
         /// <summary>
         /// 获取 System 关联的 Entity 的匹配条件
         /// </summary>
         /// <returns></returns>
-        public virtual ECS_Match GetSystemMatch()
+        public virtual bool GetSystemMatch(ECS_Entity entity)
         {
-            return null;
+            return true;
+        }
+
+        /// <summary>
+        /// 获取 System 关联的 Entity 的触发条件
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public virtual bool GetTrigger(ECS_Entity entity)
+        {
+            return true;
         }
 
         SystemMode _systemMode = (SystemMode)(-1);
@@ -67,11 +77,6 @@ namespace SampleECS
                 }
                 return _systemMode;
             }
-        }
-
-        public virtual bool GetTrigger(ECS_Entity entity)
-        {
-            return true;
         }
     }
 }
