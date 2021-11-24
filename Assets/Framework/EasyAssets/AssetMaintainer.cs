@@ -450,6 +450,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             eBundle.onDispose();
 
             disposePool.Remove(eBundle.bundleName);
+            unloadUnusedDirty = true;
             Debug.Log("Release Bundle : " + eBundle.bundleName);
         }
     }
@@ -595,6 +596,16 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
         //加载场景
         TickLoadScene();
+    }
+
+    bool unloadUnusedDirty = false;
+    private void LateUpdate()
+    {
+        if (unloadUnusedDirty)
+        {
+            unloadUnusedDirty = false;
+            Resources.UnloadUnusedAssets();
+        }
     }
 
     #endregion
