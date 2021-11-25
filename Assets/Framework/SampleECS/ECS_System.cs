@@ -11,6 +11,14 @@ namespace SampleECS
         /// </summary>
         public virtual int ExcuteIndex { get; } = 0;
 
+        bool inited = false;
+        public void Init(ECS_Context core)
+        {
+            getTrigger = GetTrigger();
+            inited = true;
+            OnSystemInited(core);
+        }
+
         /// <summary>
         /// 当系统初始化的时候会调用
         /// </summary>
@@ -29,20 +37,6 @@ namespace SampleECS
 
         }
 
-        //ECS_Match _match = null;
-        ///// <summary>
-        ///// 获取 System 的 Entity 匹配条件
-        ///// </summary>
-        //public ECS_Match getMatch
-        //{
-        //    get
-        //    {
-        //        if (_match == null)
-        //            _match = GetSystemMatch();
-        //        return _match;
-        //    }
-        //}
-
         /// <summary>
         /// 获取 System 关联的 Entity 的匹配条件
         /// </summary>
@@ -52,14 +46,15 @@ namespace SampleECS
             return true;
         }
 
+        public ECS_Trigger getTrigger;
         /// <summary>
         /// 获取 System 关联的 Entity 的触发条件
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public virtual bool GetTrigger(ECS_Entity entity)
+        public virtual ECS_Trigger GetTrigger()
         {
-            return true;
+            return default;
         }
 
         SystemMode _systemMode = (SystemMode)(-1);

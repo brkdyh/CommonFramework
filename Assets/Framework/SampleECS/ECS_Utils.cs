@@ -125,26 +125,24 @@ namespace SampleECS
             return default;
         }
 
-        public static void SetArrayElement<T>(ref T[] array, int index, T element, byte extendRate = 2)
+        /// <summary>
+        /// 设置对应下标的元素值，若数组长度不够，则会按照扩容倍率自动扩容。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array"></param>
+        /// <param name="index"></param>
+        /// <param name="element"></param>
+        /// <param name="extendRate"></param>
+        public static void SetArrayElement<T>(ref T[] array, int index, T element, float extendRate = 1.2f)
         {
+            if (extendRate < 1f)
+                throw new Exception("Extend Rate Must Greater Than 1!");
+
             if (index >= array.Length)
             {
-                var new_size = array.Length == 0 ? 1 : (array.Length * extendRate);
+                var new_size = array.Length == 0 ? 1 : (int)(array.Length * extendRate) + 1;
                 Array.Resize<T>(ref array, new_size);
                 SetArrayElement<T>(ref array, index, element, extendRate);
-                return;
-            }
-
-            array[index] = element;
-        }
-
-        public static void SetArrayElementAddOne<T>(ref T[] array, int index, T element, byte extend = 1)
-        {
-            if (index >= array.Length)
-            {
-                var new_size = array.Length == 0 ? 1 : (array.Length + extend);
-                Array.Resize<T>(ref array, new_size);
-                SetArrayElement<T>(ref array, index, element, extend);
                 return;
             }
 

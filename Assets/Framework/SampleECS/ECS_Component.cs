@@ -5,11 +5,6 @@ using System;
 
 namespace SampleECS
 {
-    //public interface IECS_Component
-    //{
-
-    //}
-
     /// <summary>
     /// 简易ECS框架-Component
     /// </summary>
@@ -154,5 +149,28 @@ namespace SampleECS
         }
 
         #endregion
+    }
+
+    public static partial class ECS_Component_Type
+    {
+        public static int COMPONENT_TYPE_COUNT { get; private set; } = 0;
+        public static void SetTypeCount(int count) { COMPONENT_TYPE_COUNT = count; }
+    }
+
+    public static partial class ECS_Component_Wrap
+    {
+        static Dictionary<string, int> COM_TYPE_ID_MAP = new Dictionary<string, int>();
+        public static int Type2ID(Type type)
+        {
+            var str = type.ToString();
+            return Type2ID(str);
+        }
+        public static int Type2ID(string type)
+        {
+            if (COM_TYPE_ID_MAP.ContainsKey(type))
+                return COM_TYPE_ID_MAP[type];
+
+            return -1;
+        }
     }
 }
