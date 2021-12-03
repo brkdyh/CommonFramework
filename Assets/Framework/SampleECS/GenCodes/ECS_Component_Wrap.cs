@@ -6,8 +6,14 @@ namespace SampleECS
 {
 	public static partial class ECS_Component_Type
 	{
-		/* Component <TestComp> ID */
-		public const int TestComp = 0;
+		/* Component <IDComp> ID */
+		public const int IDComp = 0;
+		/* Component <PositionComp> ID */
+		public const int PositionComp = 1;
+		/* Component <TransformComp> ID */
+		public const int TransformComp = 2;
+		/* Component <CreateComp> ID */
+		public const int CreateComp = 3;
 	}
 
 	public static partial class ECS_Component_Wrap
@@ -16,7 +22,10 @@ namespace SampleECS
 		public static void Init()
 		{
 			if(inited) return;
-			COM_TYPE_ID_MAP.Add("TestComp",ECS_Component_Type.TestComp);
+			COM_TYPE_ID_MAP.Add("IDComp",ECS_Component_Type.IDComp);
+			COM_TYPE_ID_MAP.Add("PositionComp",ECS_Component_Type.PositionComp);
+			COM_TYPE_ID_MAP.Add("TransformComp",ECS_Component_Type.TransformComp);
+			COM_TYPE_ID_MAP.Add("CreateComp",ECS_Component_Type.CreateComp);
 			ECS_Component_Type.SetTypeCount(COM_TYPE_ID_MAP.Count);
 			inited = true;
 		}

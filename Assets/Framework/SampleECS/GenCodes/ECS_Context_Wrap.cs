@@ -5,12 +5,27 @@ namespace SampleECS
 {
 	public partial class ECS_Context
 	{
-		public ECS_Component_Pool<TestComp> pool_TestComp;
+		public ECS_Component_Pool<IDComp> pool_IDComp;
+		public ECS_Component_Pool<PositionComp> pool_PositionComp;
+		public ECS_Component_Pool<TransformComp> pool_TransformComp;
+		public ECS_Component_Pool<CreateComp> pool_CreateComp;
 		public void InitComPool(int context_id)
 		{
 			component_pool_container_ptr++;
-			pool_TestComp = ECS_Component_Pool<TestComp>.GetPool(context_id,typeof(TestComp));
-			ECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr,pool_TestComp);
+			pool_IDComp = ECS_Component_Pool<IDComp>.GetPool(context_id,typeof(IDComp));
+			ECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr,pool_IDComp);
+
+			component_pool_container_ptr++;
+			pool_PositionComp = ECS_Component_Pool<PositionComp>.GetPool(context_id,typeof(PositionComp));
+			ECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr,pool_PositionComp);
+
+			component_pool_container_ptr++;
+			pool_TransformComp = ECS_Component_Pool<TransformComp>.GetPool(context_id,typeof(TransformComp));
+			ECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr,pool_TransformComp);
+
+			component_pool_container_ptr++;
+			pool_CreateComp = ECS_Component_Pool<CreateComp>.GetPool(context_id,typeof(CreateComp));
+			ECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr,pool_CreateComp);
 
 		}
 	}

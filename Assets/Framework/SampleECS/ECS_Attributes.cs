@@ -5,7 +5,14 @@ namespace SampleECS
     /// <summary>
     /// ECS Component
     /// </summary>
-    public class ComponentAttribute : Attribute { }
+    public class ComponentAttribute : Attribute
+    {
+        public bool isStatic = false;
+        public ComponentAttribute(bool isStatic = false)
+        {
+            this.isStatic = isStatic;
+        }
+    }
 
     public enum SystemMode
     {

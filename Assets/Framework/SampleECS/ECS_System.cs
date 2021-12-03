@@ -11,19 +11,22 @@ namespace SampleECS
         /// </summary>
         public virtual int ExcuteIndex { get; } = 0;
 
+        protected ECS_Context context;
+
         bool inited = false;
-        public void Init(ECS_Context core)
+        public void Init(ECS_Context context)
         {
+            this.context = context;
             getTrigger = GetTrigger();
             inited = true;
-            OnSystemInited(core);
+            OnSystemInited(context);
         }
 
         /// <summary>
         /// 当系统初始化的时候会调用
         /// </summary>
         /// <param name="core"></param>
-        public virtual void OnSystemInited(ECS_Context core)
+        public virtual void OnSystemInited(ECS_Context context)
         {
 
         }

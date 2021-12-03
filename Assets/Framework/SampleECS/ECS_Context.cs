@@ -7,8 +7,6 @@ using UnityEngine;
 
 namespace SampleECS
 {
-    //#region Obsulate
-    //#endregion
     public struct ECS_Trigger
     {
         public int[] type_ids;
@@ -35,31 +33,70 @@ namespace SampleECS
     /// <summary>
     /// Entity集合
     /// </summary>
-    public class ECS_Entity_Collections
+    internal class ECS_Entity_Collections
     {
 
         Dictionary<uint, int> uid_idx_map = new Dictionary<uint, int>();
         int entity_Ptr = -1;
-        public int RealLength { get { return entity_Ptr + 1; } }
+        internal int RealLength { get { return entity_Ptr + 1; } }
         ECS_Entity[] _entities = new ECS_Entity[0];
-        public ECS_Entity[] entities { get { return _entities; } }
-        //public ECS_Entity[] limitEntities { get { return } }
-        public void AddEntity(ECS_Entity entity)
+        internal ECS_Entity[] entities { get { return _entities; } }
+
+        Queue<ECS_Entity> addCache = new Queue<ECS_Entity>();
+
+        internal void AddEntity(ECS_Entity entity)
         {
-            if (!uid_idx_map.ContainsKey(entity.uid))
+            if (uid_idx_map.ContainsKey(entity.uid))
+                return;
+            addCache.Enqueue(entity);
+        }
+
+        internal void RealAddEntity()
+        {
+            while (addCache.Count > 0)
             {
-                entity_Ptr++;
-                uid_idx_map.Add(entity.uid, entity_Ptr);
-                ECS_Utils.SetArrayElement(ref _entities, entity_Ptr, entity);
+                var entity = addCache.Dequeue();
+                if (!uid_idx_map.ContainsKey(entity.uid))
+                {
+                    entity_Ptr++;
+                    uid_idx_map.Add(entity.uid, entity_Ptr);
+                    ECS_Utils.SetArrayElement(ref _entities, entity_Ptr, entity);
+                }
             }
         }
 
-        public void RemoveEntity(ECS_Entity entity)
+        HashSet<int> removeCache = new HashSet<int>();
+
+        internal void RemoveEntity(ECS_Entity entity)
         {
-            var idx = -1;
-            if (!uid_idx_map.TryGetValue(entity.uid, out idx))
+            int idx = -1;
+            if (uid_idx_map.TryGetValue(entity.uid, out idx))
+                return;
+            removeCache.Add(idx);
+        }
+
+        internal void RealRemoveEntity()
+        {
+            if (removeCache.Count <= 0)
                 return;
 
+            entity_Ptr++;
+            var new_entities = new ECS_Entity[0];
+            entity_Ptr = -1;
+            uid_idx_map.Clear();
+            for (int i = 0; i < RealLength; i++)
+            {
+                if (removeCache.Contains(i))
+                    continue;
+
+                var entity = _entities[i];
+                entity_Ptr++;
+                ECS_Utils.SetArrayElement(ref new_entities, entity_Ptr, entity);
+                uid_idx_map.Add(entity.uid, entity_Ptr);
+            }
+            _entities = new_entities;
+
+            removeCache.Clear();
         }
 
         //public void FormatEntitySize()
@@ -76,15 +113,19 @@ namespace SampleECS
     /// <summary>
     /// ECS运行环境
     /// </summary>
-    public partial class ECS_Context
+    public partial class ECS_Context : ECS_RecyclePool<ECS_Entity>
     {
-        public int RUN_FRAME = 0;
+        /// <summary>
+        /// Don‘t Modify This Value!!!
+        /// </summary>
+        public bool ExcutingSystem = false;
 
         #region  Container
 
         static int context_ptr = -1;
         //Context容器
         static ECS_Context[] context_container = new ECS_Context[4];
+        public static ECS_Context[] AllContexts { get { return context_container; } }
 
         #endregion
 
@@ -93,14 +134,10 @@ namespace SampleECS
         int _context_idx = -1;
         public int context_idx { get { return _context_idx; } }
 
-        ////组件池
-        ////Dictionary<Type, IECS_Component_Pool> component_pool_container = new Dictionary<Type, IECS_Component_Pool>();
+        //全部组件池
         public int component_pool_container_ptr = -1;
         IECS_Component_Pool[] component_pool_container = new IECS_Component_Pool[0];
 
-        //全体Entity容器
-        ECS_Entity[] entity_container = new ECS_Entity[1024];
-        int entity_container_ptr = -1;
         Dictionary<uint, int> euid_idx_map = new Dictionary<uint, int>();
 
         //全体System容器
@@ -118,6 +155,7 @@ namespace SampleECS
             context.context_name = context_name;
             context.InitECSContext();
             ECS_Utils.SetArrayElement(ref context_container, context_ptr, context);
+            EnableContext(context_name);
             return context;
         }
 
@@ -125,6 +163,17 @@ namespace SampleECS
         {
             if (idx <= context_ptr)
                 return context_container[idx];
+            return null;
+        }
+
+        public static ECS_Context GetContext(string context_name)
+        {
+            for (int i = 0, l = context_container.Length; i < l; i++)
+            {
+                if (context_name == context_container[i].context_name)
+                    return context_container[i];
+            }
+
             return null;
         }
 
@@ -144,6 +193,14 @@ namespace SampleECS
             }
         }
 
+        public static void EnableContext(ECS_Context context) { ECS_Runtime.InjectContext(context); }
+
+        public static void EnableContext(string context_name) { EnableContext(GetContext(context_name)); }
+
+        public static void DisableContext(ECS_Context context) { ECS_Runtime.DisposeContext(context); }
+
+        public static void DisableContext(string context_name) { DisableContext(GetContext(context_name)); }
+
         #endregion
 
         #region Entity
@@ -151,24 +208,29 @@ namespace SampleECS
         public ECS_Entity CreateEntity()
         {
             var uid = ECS_Utils.ApplyUID();
-            ECS_Entity entity = new ECS_Entity(uid, _context_idx);
-            if (AddEntity(entity))
+            int ptr;
+            ECS_Entity entity = Apply(out ptr);
+            entity.Reset(uid, _context_idx);
+            if (AddEntity(entity, ptr))
                 return entity;
             return null;
         }
 
-        bool AddEntity(ECS_Entity entity)
+        bool AddEntity(ECS_Entity entity, int ptr)
         {
             if (euid_idx_map.ContainsKey(entity.uid))
+            {
+                Debug.LogError("Error Return!");
                 return false;
-            entity_container_ptr++;
-            euid_idx_map.Add(entity.uid, entity_container_ptr);
-            entity.idx = entity_container_ptr;
-            ECS_Utils.SetArrayElement(ref entity_container, entity_container_ptr, entity);
-            if (excuteEntities.Length < entity_container.Length)
+            }
+            entity._in_context_idx = ptr;
+            //Debug.Log("add entity! idx = " + ptr);
+            euid_idx_map.Add(entity.uid, ptr);
+
+            if (excuteEntities.Length < data_pool.Length)
             {//跟随entity_container扩容
-                excuteEntities = new int[entity_container.Length];
-                //Debug.Log(entity_container.Length);
+                Array.Resize(ref excuteEntities, data_pool.Length);
+                //Debug.Log("Resize = " + excuteEntities.Length);
             }
 
             return CollectEntity(entity);
@@ -200,19 +262,54 @@ namespace SampleECS
             }
         }
 
+        Stack<int> removeCache = new Stack<int>();
         public bool RemoveEntity(ECS_Entity entity)
         {
             if (!euid_idx_map.ContainsKey(entity.uid))
                 return false;
-            euid_idx_map.Remove(entity.uid);
-            DisposeEntity(entity);
+
+            removeCache.Push(entity._in_context_idx);
             return true;
+        }
+
+        void RealRemoveEntity(ECS_Entity entity)
+        {
+            if (euid_idx_map.Remove(entity.uid))
+            {
+                DisposeEntity(entity);
+                Recycle(entity._in_context_idx);    //回收Entity
+            }
         }
 
         public void OnEntityChange(ECS_Entity entity)
         {
             DisposeEntity(entity);
             CollectEntity(entity);
+        }
+
+        void UpdateEntities()
+        {
+            while (removeCache.Count > 0)
+            {
+                var idx = removeCache.Pop();
+                var entity = data_pool[idx];
+                RealRemoveEntity(entity);
+            }
+        }
+
+        #endregion
+
+        #region Collection
+
+        public void UpdateCollection()
+        {
+            var e = system_collections.GetEnumerator();
+            while (e.MoveNext())
+            {
+                var collection = e.Current.Value;
+                collection.RealRemoveEntity();
+                collection.RealAddEntity();
+            }
         }
 
         #endregion
@@ -249,10 +346,9 @@ namespace SampleECS
             return system_collections[type];
         }
 
-
         public int excute_ptr = -1;
         public int[] excuteEntities = new int[0];
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ExcuteSystem(ECS_System system)
         {
             try
@@ -280,13 +376,13 @@ namespace SampleECS
 
                         //whether Entity Fit Condition of System-Trigger
                         //为了更高的执行效率，不封装这段代码以减少方法调用次数
-                        var e_dirty_ptr = entity.dirtyMarkPtr;
+                        var e_dirty_ptr = entity.com_dirtyMarkFront_Ptr;
                         bool dirty = false;
                         if (e_dirty_ptr >= 0)
                         {
                             //whether entity fit every condition of System-Trigger
                             dirty = true;
-                            var dm = entity.dirtyMark;
+                            var dm = entity.com_dirtyMarkFront;
                             for (int j = 0, l1 = trigger_types.Length; j < l1; j++)
                             {
                                 int cur_type = trigger_types[j];
@@ -320,11 +416,15 @@ namespace SampleECS
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         void DoExcute()
         {
+            ExcutingSystem = true;
+
             foreach (var sys in systems_container.Values)
                 ExcuteSystem(sys);
+
+            ExcutingSystem = false;
         }
 
         void CleanEntityMark()
@@ -332,25 +432,61 @@ namespace SampleECS
             if (excute_ptr < 0)
                 return;
 
-            for (int i = 0, l = excute_ptr + 1; i < l; i++)
-                entity_container[excuteEntities[i]].dirtyMarkPtr = -1; //重置dirty mark指针
+            int new_excute_ptr = -1;
+            try
+            {
+                for (int i = 0, l = excute_ptr + 1; i < l; i++)
+                {
+                    var entity = data_pool[excuteEntities[i]];
+                    if (entity.com_dirtyMarkBack_Ptr < 0)
+                    {
+                        entity.entityDirty = false;
+                        entity.com_dirtyMarkFront_Ptr = -1; //重置dirty mark指针
+                    }
+                    else
+                    {
+                        //Switch Cache
+                        var temp_ptr = entity.com_dirtyMarkBack_Ptr;
+                        var temp_mark = entity.com_dirtyMarkBack;
 
-            excute_ptr = -1;
+                        entity.com_dirtyMarkBack = entity.com_dirtyMarkFront;
+                        entity.com_dirtyMarkBack_Ptr = -1;
+
+                        entity.com_dirtyMarkFront = temp_mark;
+                        entity.com_dirtyMarkFront_Ptr = temp_ptr;
+
+                        entity.entityDirty = true;
+                        new_excute_ptr++;
+                        excuteEntities[new_excute_ptr] = entity._in_context_idx;
+                        //Debug.Log("In System Change = " + entity.uid);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            excute_ptr = new_excute_ptr;
         }
 
         #endregion
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Tick()
         {
-            DoExcute();
-        }
+            /*Sweet Little Puppy!*/
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void LateTick()
-        {
+            //Update Entities
+            UpdateEntities();
+
+            //Update Collection
+            UpdateCollection();
+
+            //Excute System;
+            DoExcute();
+
+            //Clean Dirty Mark
             CleanEntityMark();
-            RUN_FRAME++;
         }
     }
 
@@ -362,11 +498,6 @@ namespace SampleECS
         public static Type GetSysType(this ECS_System system)
         {
             return system.GetType();
-        }
-
-        public static bool isVaildUid(in this uint uid)
-        {
-            return uid != 0;
         }
     }
 }
