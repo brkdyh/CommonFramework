@@ -155,6 +155,10 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
     T LoadAsset_Internal<T>(string assetPath)
         where T : UnityEngine.Object
     {
+        if (externalAssetList == null)
+        {//如果是内部资源,直接使用Resources加载
+            return Resources.Load<T>(assetPath);
+        }
         var bundleName = externalAssetList.GetBundleName(assetPath);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
@@ -249,6 +253,15 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         bool load_gameobject = false, Transform parent = null)
         where T : UnityEngine.Object
     {
+        if (externalAssetList == null)
+        {//如果是内部资源,直接使用Resources加载
+            var request = Resources.LoadAsync<T>(assetPath);
+            LoadAsyncTask r_task = new LoadAsyncTask(request, onFinish);
+            r_task.MarkLoadGameobject(load_gameobject, parent);
+            loadAsyncTasks.Add(r_task.taskUid, r_task);
+            return;
+        }
+
         var bundleName = externalAssetList.GetBundleName(assetPath);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
