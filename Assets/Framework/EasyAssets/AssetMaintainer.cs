@@ -621,5 +621,13 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         }
     }
 
+    /// <summary>
+    /// 作用与Resources.UnloadUnusedAssets()相同。
+    /// </summary>
+    public static void UnloadUnusedAssets()
+    {
+        Instance.unloadUnusedDirty = true;
+    }
+
     #endregion
 }
