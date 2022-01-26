@@ -393,6 +393,14 @@ namespace LitJson
 
             context.ExpectingValue = false;
         }
+        
+        public void Write(BigNumber number) {
+            DoValidation(Condition.Value);
+            PutNewline();
+            
+            Put(number.ToString());
+            context.ExpectingValue = false;
+        }
 
         public void WriteArrayEnd ()
         {
@@ -480,5 +488,7 @@ namespace LitJson
 
             context.ExpectingValue = true;
         }
+
+
     }
 }

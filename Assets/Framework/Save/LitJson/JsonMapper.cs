@@ -772,6 +772,11 @@ namespace LitJson
                 return;
             }
 
+            if (obj is BigNumber) {
+                writer.Write((BigNumber) obj);
+                return;
+            }
+            
             if (obj is Array) {
                 writer.WriteArrayStart ();
 
