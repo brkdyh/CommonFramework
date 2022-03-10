@@ -108,6 +108,20 @@ namespace SampleECS
         //}
 
         public bool ContainEntity(ECS_Entity entity) { return uid_idx_map.ContainsKey(entity.uid); }
+
+        public void Clean()
+        {
+            uid_idx_map.Clear();
+            entity_Ptr = -1;
+            addCache.Clear();
+            removeCache.Clear();
+        }
+
+        public void Diepose()
+        {
+            Clean();
+            _entities = new ECS_Entity[0];
+        }
     }
 
     /// <summary>
@@ -142,6 +156,8 @@ namespace SampleECS
 
         //全体System容器
         Dictionary<Type, ECS_System> systems_container = new Dictionary<Type, ECS_System>();
+        //System执行容器 --  按照执行顺序排序后的System列表
+        List<ECS_System> ex_systems_container = new List<ECS_System>();
         Dictionary<Type, ECS_Entity_Collections> system_collections = new Dictionary<Type, ECS_Entity_Collections>();
 
         #region Context
@@ -187,9 +203,10 @@ namespace SampleECS
             foreach (var type in asm_all_types)
             {
                 SystemAttribute sa = type.GetCustomAttribute<SystemAttribute>();
+
                 if (sa != null)
                     if (sa.context == "All" || sa.context.Contains(context_name))
-                        CreateSystem(type);
+                        CreateSystem(type, sa.systemMode);
             }
         }
 
@@ -200,6 +217,98 @@ namespace SampleECS
         public static void DisableContext(ECS_Context context) { ECS_Runtime.DisposeContext(context); }
 
         public static void DisableContext(string context_name) { DisableContext(GetContext(context_name)); }
+
+        void CleanContext()
+        {
+            if (ExcutingSystem)
+            {
+                throw new Exception("Can not Clean Context during Excuting System!");
+            }
+
+            euid_idx_map.Clear();
+            removeCache.Clear();
+            excute_ptr = -1;
+
+            //Clean collections
+            foreach (var collection in system_collections)
+                collection.Value.Clean();
+
+            //Recyle Component
+            for (int i = 0; i < component_pool_container_ptr + 1; i++)
+            {
+                component_pool_container[i].RecyleAll();
+            }
+
+            //Recyle Entity
+            RecyleAll();
+        }
+
+        public static void CleanContext(string context_name)
+        {
+            var context = GetContext(context_name);
+            if (context != null)
+                context.CleanContext();
+        }
+
+        void DisposeContext()
+        {
+            if (ExcutingSystem)
+            {
+                throw new Exception("Can not Dispose Context during Excuting System!");
+            }
+
+            euid_idx_map.Clear();
+            euid_idx_map = null;
+            removeCache.Clear();
+            removeCache = null;
+            excute_ptr = -1;
+            excuteEntities = null;
+
+            systems_container.Clear();
+            systems_container = null;
+            ex_systems_container.Clear();
+            ex_systems_container = null;
+
+            //Dispose collections
+            foreach (var collection in system_collections)
+                collection.Value.Diepose();
+            system_collections.Clear();
+            system_collections = null;
+
+            //Dispose Component
+            for (int i = 0; i < component_pool_container_ptr + 1; i++)
+                component_pool_container[i].Clean();
+            component_pool_container = null;
+
+            //Dispose Entity
+            Clean();
+        }
+
+        public static void DisposeContext(string context_name)
+        {
+            var context = GetContext(context_name);
+            if (context != null)
+            {
+                context.DisposeContext();
+
+                ECS_Context[] new_contexts = null;
+                if (context_ptr > 1)
+                    new_contexts = new ECS_Context[context_ptr];
+                else
+                    new_contexts = new ECS_Context[4];
+
+                int new_idx_counter = 0;
+                for (int i = 0; i < context_ptr + 1; i++)
+                {
+                    if (context_container[i].context_name == context_name)
+                        continue;
+                    new_contexts[new_idx_counter] = context_container[i];
+                    new_idx_counter++;
+                }
+
+                context_container = new_contexts;
+            }
+        }
 
         #endregion
 
@@ -297,6 +406,25 @@ namespace SampleECS
             }
         }
 
+        public ECS_Entity FindEntity(uint euid)
+        {
+            try
+            {
+                int idx = -1;
+                if (euid_idx_map.TryGetValue(euid, out idx))
+                {
+                    return data_pool[idx];
+                }
+
+                return null;
+            }
+            catch(Exception ex)
+            {
+                Debug.LogException(ex);
+                return null;
+            }
+        }
+
         #endregion
 
         #region Collection
@@ -316,11 +444,12 @@ namespace SampleECS
 
         #region System
 
-        void CreateSystem(Type systemType)
+        void CreateSystem(Type systemType, SystemMode systemMode)
         {
             if (!systems_container.ContainsKey(systemType))
             {
                 var system = Activator.CreateInstance(systemType) as ECS_System;
+                system.SetSystemMode(systemMode);
                 CollectSystem(system);
             }
         }
@@ -335,7 +464,8 @@ namespace SampleECS
             }
             system.Init(this);
             systems_container.Add(tp, system);
-
+            ex_systems_container.Add(system);
+            ex_systems_container.Sort((s1, s2) => { return s1.ExcuteIndex < s2.ExcuteIndex ? -1 : 1; });
         }
 
         ECS_Entity_Collections getSystemCollection(ECS_System system)
@@ -353,6 +483,7 @@ namespace SampleECS
         {
             try
             {
+
                 var type = system.GetType();
                 ECS_Entity_Collections collection = null;
                 if (!system_collections.TryGetValue(type, out collection))
@@ -360,14 +491,20 @@ namespace SampleECS
                 var entities = collection.entities;
                 if (system.getSystemMode == SystemMode.Loop)
                 {
+                    system.BeforeExcute();              //调用 BeforeExcute
+
                     var len = collection.RealLength;
                     for (int i = 0; i < len; i++)
                     {
                         system.Excute(entities[i]);
                     }
+
+                    system.AfterExcute();              //调用 AfterExcute
                 }
                 else if (system.getSystemMode == SystemMode.Action)
                 {
+                    bool call_before = false;
+
                     var trigger_types = system.getTrigger.type_ids;
                     var len = collection.RealLength;
                     for (int i = 0; i < len; i++)
@@ -405,8 +542,18 @@ namespace SampleECS
                         }
 
                         if (dirty)
+                        {
+                            if (!call_before)
+                            {
+                                system.BeforeExcute();
+                                call_before = true;
+                            }
                             system.Excute(entity);
+                        }
                     }
+
+                    if (call_before)
+                        system.AfterExcute();
                 }
 
             }
@@ -421,7 +568,7 @@ namespace SampleECS
         {
             ExcutingSystem = true;
 
-            foreach (var sys in systems_container.Values)
+            foreach (var sys in ex_systems_container)
                 ExcuteSystem(sys);
 
             ExcutingSystem = false;

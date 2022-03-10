@@ -32,10 +32,26 @@ namespace SampleECS
         }
 
         /// <summary>
+        /// 在执行所有 Excute() 之前被调用
+        /// </summary>
+        public virtual void BeforeExcute()
+        {
+
+        }
+
+        /// <summary>
         /// 系统执行方法
         /// </summary>
         /// <param name="entity"></param>
         public virtual void Excute(ECS_Entity entity)
+        {
+
+        }
+
+        /// <summary>
+        /// 在执行所有 Excute() 之后被调用
+        /// </summary>
+        public virtual void AfterExcute()
         {
 
         }
@@ -61,18 +77,19 @@ namespace SampleECS
         }
 
         SystemMode _systemMode = (SystemMode)(-1);
+        public void SetSystemMode(SystemMode systemMode) { _systemMode = systemMode; }
         public SystemMode getSystemMode
         {
             get
             {
-                if ((int)_systemMode == -1)
-                {
-                    var att = ECS_Utils.GetAttributeData<SystemAttribute>(this);
-                    if (att != null)
-                        _systemMode = ECS_Utils.GetAttributeMemberValue<SystemMode>("systemMode", att);
-                    else
-                        _systemMode = SystemMode.Action;
-                }
+                //if ((int)_systemMode == -1)
+                //{
+                //    var att = ECS_Utils.GetAttributeData<SystemAttribute>(this);
+                //    if (att != null)
+                //        _systemMode = ECS_Utils.GetAttributeMemberValue<SystemMode>("systemMode", att);
+                //    else
+                //        _systemMode = SystemMode.Action;
+                //}
                 return _systemMode;
             }
         }

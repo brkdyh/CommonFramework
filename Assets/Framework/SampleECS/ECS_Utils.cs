@@ -107,6 +107,7 @@ namespace SampleECS
             return GetAttributeData<T>(type) != null;
         }
 
+#if UNITY_EDITOR
         /// <summary>
         /// 获取自定义属性值
         /// </summary>
@@ -124,6 +125,7 @@ namespace SampleECS
 
             return default;
         }
+#endif
 
         /// <summary>
         /// 设置对应下标的元素值，若数组长度不够，则会按照扩容倍率自动扩容。

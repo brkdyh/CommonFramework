@@ -78,7 +78,17 @@ namespace SampleECS
                 throw new Exception("ECS => Invaild Component Type: " + type);
         }
 
+        public void AddComponent(Type type, object com)
+        {
+            var method = GetType().GetMethod("Add_" + type.Name);
+            if (method != null)
+                method.Invoke(this, new object[] { com });
+            else
+                throw new Exception("ECS => Invaild Component Type: " + type);
+        }
+
         public void RemoveComponent<T>()
+            where T : struct
         {
             Type type = typeof(T);
             var method = GetType().GetMethod("Remove_" + type.Name);
@@ -86,6 +96,29 @@ namespace SampleECS
                 method.Invoke(this, null);
             else
                 throw new Exception("ECS => Invaild Component Type: " + type);
+        }
+
+        public bool HasComponent<T>()
+        {
+            Type type = typeof(T);
+            var method = GetType().GetMethod("has_" + type.Name);
+            if (method != null)
+                return (bool)method.Invoke(this, null);
+            else
+                throw new Exception("ECS => Invaild Component Type: " + type);
+        }
+
+        public T GetComponent<T>()
+           where T : struct
+        {
+            Type type = typeof(T);
+            var prop = GetType().GetProperty(type.Name.ToLower());
+            if (prop != null)
+            {
+                return (T)prop.GetValue(this);
+            }
+
+            return default;
         }
     }
 }

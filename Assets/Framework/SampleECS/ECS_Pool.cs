@@ -34,6 +34,7 @@ namespace SampleECS
 
             data_pool[idx].disposed = true;
             disposedCache.Push(idx);
+            //Debug.Log("Recyle " + typeof(T).ToString() + " idx = " + idx);
         }
 
         public ref T Apply(out int idx)
@@ -43,6 +44,7 @@ namespace SampleECS
                 var av_idx = disposedCache.Pop();
                 idx = av_idx;
                 data_pool[idx].disposed = false;
+                //Debug.Log("Reapply " + typeof(T).ToString());
                 return ref data_pool[idx];
             }
 
@@ -69,6 +71,13 @@ namespace SampleECS
             data_ptr = -1;
             data_pool = new T[0];
             disposedCache.Clear();
+        }
+
+        public void RecyleAll()
+        {
+            for (int i = 0; i < data_ptr + 1; i++)
+                Recycle(i);
+            //Debug.Log(typeof(T) + " RecyleAll");
         }
     }
 }

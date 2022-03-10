@@ -23,6 +23,8 @@ namespace SampleECS
         int NewComponent();
         int NewComponent(object com);
         object FindComponent(int idx);
+        void Clean();
+        void RecyleAll();
         //void SetCompoent(int idx, object com);
     }
 
