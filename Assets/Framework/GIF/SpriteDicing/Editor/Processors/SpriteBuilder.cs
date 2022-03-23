@@ -114,8 +114,9 @@ namespace SpriteDicing
                 vertices[i] -= deltaPos;
         }
 
-        private Sprite CreateSprite (string name, Texture texture, Vector2 pivot, Rect renderRect)
+        private Sprite CreateSprite(string name, Texture texture, Vector2 pivot, Rect renderRect)
         {
+#if UNITY_2019_3_OR_NEWER
             // (texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape)
             var args = new object[] { texture, renderRect, pivot, ppu, (uint)0, SpriteMeshType.Tight, Vector4.zero, false };
             var sprite = (Sprite)createSpriteMethod.Invoke(null, args);
@@ -125,6 +126,9 @@ namespace SpriteDicing
             sprite.SetVertexAttribute(VertexAttribute.Position, new NativeArray<Vector3>(vertices.ToArray(), Allocator.Temp));
             sprite.SetVertexAttribute(VertexAttribute.TexCoord0, new NativeArray<Vector2>(uvs.ToArray(), Allocator.Temp));
             return sprite;
+#else
+            return null;
+#endif
         }
     }
 }

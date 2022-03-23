@@ -14,7 +14,9 @@ namespace CM_GIF
     {
         NoAssets,
         SingleSprite,
+#if UNITY_2019_3_OR_NEWER
         Atlas,
+#endif
     }
 
     //播放方式
@@ -105,7 +107,9 @@ public class GIFPlayer : MonoBehaviour
 
     List<Sprite> frameSprite = new List<Sprite>();                      //动画帧资源-精灵
     List<Texture> frameTextures = new List<Texture>();                  //动画帧资源-纹理
+#if UNITY_2019_3_OR_NEWER
     DicedSpriteAtlas dsAtlas = null;                                    //动画帧资源-图集
+#endif
 
     /* 设置参数 */
     public int TargetFPS = 24;                              //目标帧率
@@ -167,11 +171,13 @@ public class GIFPlayer : MonoBehaviour
                 image = gameObject.AddComponent<Image>();
                 image.enabled = false;
                 image.raycastTarget = false;
+#if UNITY_2019_3_OR_NEWER
                 if (assetType == AssetType.Atlas)
                 {//使用图集资源
                     image.type = Image.Type.Simple;
                     image.useSpriteMesh = true;
                 }
+#endif
             }
             else if (renderType == RenderType.RawImage)
             {
@@ -259,6 +265,7 @@ public class GIFPlayer : MonoBehaviour
                 }
             }
         }
+#if UNITY_2019_3_OR_NEWER
         else if (assetType == AssetType.Atlas)
         {//使用图集
 #if USE_EASYASSETS
@@ -267,6 +274,7 @@ public class GIFPlayer : MonoBehaviour
             dsAtlas = Resources.Load<DicedSpriteAtlas>(GIFPath);
 #endif
         }
+#endif
         //设置Renderer
         SetRenderer(renderType);
 
@@ -449,12 +457,14 @@ public class GIFPlayer : MonoBehaviour
         int realIdx = methodType == MethodType.ByFrame ?
             gifConfig.frameDatas[frame].realIndex : gifConfig.delayDatas[frame].realIndex;
 
+#if UNITY_2019_3_OR_NEWER
         if (assetType == AssetType.Atlas)
         {
             var sprite = dsAtlas.GetSprite("f-" + (realIdx + 1));
             return sprite;
         }
         else
+#endif
             return frameSprite[realIdx];
     }
 

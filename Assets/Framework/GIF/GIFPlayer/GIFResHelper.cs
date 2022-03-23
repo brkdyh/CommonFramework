@@ -177,10 +177,13 @@ public class GIFResHelper : MonoBehaviour
         else
             return AssetType.SingleSprite;
 #else
+
+#if UNITY_2019_3_OR_NEWER
         var atlas = Resources.Load<DicedSpriteAtlas>(path);
         if (atlas != null)
             return AssetType.Atlas;
         else
+#endif
             return AssetType.SingleSprite;
 
 #endif
