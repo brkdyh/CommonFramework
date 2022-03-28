@@ -89,14 +89,17 @@ namespace EasyAssets
             }
         }
 
-        public string GetAssetBundleName<T>(string asset_path)
+        public string GetAssetBundleName<T>(string asset_path, ref string real_asset_path)
             where T : UnityEngine.Object
         {
             var format_paths = PathHelper.AutoFillExAssetPath<T>(asset_path);
             foreach (var path in format_paths)
             {
                 if (asset2bundleMapping.ContainsKey(path))
+                {
+                    real_asset_path = path;
                     return asset2bundleMapping[path];
+                }
             }
 
             return "null";

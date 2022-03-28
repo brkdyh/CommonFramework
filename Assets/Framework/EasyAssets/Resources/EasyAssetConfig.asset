@@ -30,6 +30,12 @@ MonoBehaviour:
     - .jpg
     - .psd
     - .jpeg
+  - Type: Sprite
+    Extentions:
+    - .png
+    - .jpg
+    - .psd
+    - .jpeg
   - Type: TextAsset
     Extentions:
     - .bytes

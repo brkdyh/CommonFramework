@@ -69,7 +69,7 @@ namespace EasyAssets
         public static string EXTERNAL_ASSET_PATH { get; private set; }
 
         static string AutoFillPathRoot;
-        static Dictionary<Type, AssetExtentions> AssetExtentionsMap = new Dictionary<Type, AssetExtentions>();
+        static Dictionary<string, AssetExtentions> AssetExtentionsMap = new Dictionary<string, AssetExtentions>();
 
         public static void Init(string path)
         {
@@ -80,15 +80,11 @@ namespace EasyAssets
             if (!Directory.Exists(EXTERNAL_ASSET_PATH))
                 Directory.CreateDirectory(EXTERNAL_ASSET_PATH);
 
-            AutoFillPathRoot = Setting.config.AutoFillPathRoot + "/";
+            AutoFillPathRoot = "assets/" + Setting.config.AutoFillPathRoot
+                + (string.IsNullOrEmpty(Setting.config.AutoFillPathRoot) ? "" : "/");
             var aem_config = Setting.config.AssetExtentionsMap;
             foreach (var ae in aem_config)
-            {
-                Type atype = Type.GetType(ae.Type);
-                if (atype != null
-                    && atype.IsSubclassOf(typeof(UnityEngine.Object)))
-                    AssetExtentionsMap.Add(atype, ae);
-            }
+                AssetExtentionsMap.Add("UnityEngine." + ae.Type, ae);
         }
 
         //自动填充外部资源路径
@@ -100,17 +96,18 @@ namespace EasyAssets
                 return new string[] { asset_path };     //路径中含有扩展名,返回原路径。
 
             //如果路径中不包含扩展名，根据资源类型填充扩展名
-            Type atype = typeof(T);
+            string atype = typeof(T).ToString();
             AssetExtentions ae = null;
             if (AssetExtentionsMap.TryGetValue(atype, out ae))
             {
                 string[] ps = new string[ae.Extentions.Count];
                 for (int i = 0, l = ps.Length; i < l; i++)
-                    ps[i] = AutoFillPathRoot + asset_path + ae.Extentions[i];  //拼接扩展名
+                    ps[i] = (AutoFillPathRoot + asset_path + ae.Extentions[i]).ToLower();  //拼接扩展名
+                    
                 return ps;
             }
 
-            return new string[] { asset_path + ".asset" };
+            return new string[] { (asset_path + ".asset").ToLower() };
         }
     }
 

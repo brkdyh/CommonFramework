@@ -159,12 +159,15 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         {//如果是内部资源,直接使用Resources加载
             return Resources.Load<T>(assetPath);
         }
-        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath);
+
+        var real_path = "";
+        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath, ref real_path);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
             return Resources.Load<T>(assetPath);
         }
 
+        assetPath = real_path;
         var direct_bundle = GetEasyBundle(bundleName);
 
         //加载依赖
@@ -262,7 +265,8 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return;
         }
 
-        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath);
+        var real_path = "";
+        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath, ref real_path);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
             var request = Resources.LoadAsync<T>(assetPath);
@@ -272,6 +276,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return;
         }
 
+        assetPath = real_path;
         //异步加载外部资源
         List<EasyBundle> easyBundles = new List<EasyBundle>();
         string[] dps = manifest.GetAllDependencies(bundleName);
