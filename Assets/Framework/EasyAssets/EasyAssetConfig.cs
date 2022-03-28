@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace EasyAssets
 {
+    [System.Serializable]
+    public class AssetExtentions
+    {
+        public string Type;
+        public List<string> Extentions;
+    }
+
     [CreateAssetMenu]
     public class EasyAssetConfig : ScriptableObject
     {
@@ -16,6 +23,57 @@ namespace EasyAssets
         public float DisposeCacheTime = 5f;
         [HideInInspector]
         public float AssetBundleLiveTime = 5f;
+
+
+        /*资源填充扩展名管理*/
+        [SerializeField]
+        public string AutoFillPathRoot = "";
+        public string GetAutoFillPathRoot { get { return "Assets/" + AutoFillPathRoot; } }
+        [SerializeField]
+        public List<AssetExtentions> AssetExtentionsMap = new List<AssetExtentions>()
+        {
+            new AssetExtentions
+            {
+                Type = "Texture",
+                Extentions = new List<string>
+                {
+                    ".png",".jpg",".psd",".jpeg"
+                }
+            },
+            new AssetExtentions
+            {
+                Type = "Texture2D",
+                Extentions = new List<string>
+                {
+                    ".png",".jpg",".psd",".jpeg"
+                }
+            },
+            new AssetExtentions
+            {
+                Type = "TextAsset",
+                Extentions = new List<string>
+                {
+                    ".bytes",".csv",".xml",".json",".html",".txt"
+                }
+            },
+            new AssetExtentions
+            {
+                Type = "AudioClip",
+                Extentions = new List<string>
+                {
+                    ".mp3",".wav"
+                }
+            },
+            new AssetExtentions
+            {
+                Type = "GameObject",
+                Extentions = new List<string>
+                {
+                    ".prefab"
+                }
+            },
+        };
+
         [SerializeField]
         public List<string> UnmanagedBundles = new List<string>();
 

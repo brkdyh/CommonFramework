@@ -67,6 +67,10 @@ namespace EasyAssets
     {
         static bool inited = false;
         public static string EXTERNAL_ASSET_PATH { get; private set; }
+
+        static string AutoFillPathRoot;
+        static Dictionary<Type, AssetExtentions> AssetExtentionsMap = new Dictionary<Type, AssetExtentions>();
+
         public static void Init(string path)
         {
             if (inited)
@@ -75,6 +79,38 @@ namespace EasyAssets
             EXTERNAL_ASSET_PATH = Application.persistentDataPath + path + "/";
             if (!Directory.Exists(EXTERNAL_ASSET_PATH))
                 Directory.CreateDirectory(EXTERNAL_ASSET_PATH);
+
+            AutoFillPathRoot = Setting.config.AutoFillPathRoot + "/";
+            var aem_config = Setting.config.AssetExtentionsMap;
+            foreach (var ae in aem_config)
+            {
+                Type atype = Type.GetType(ae.Type);
+                if (atype != null
+                    && atype.IsSubclassOf(typeof(UnityEngine.Object)))
+                    AssetExtentionsMap.Add(atype, ae);
+            }
+        }
+
+        //自动填充外部资源路径
+        public static string[] AutoFillExAssetPath<T>(string asset_path)
+            where T : UnityEngine.Object
+        {
+            string ex = Path.GetExtension(asset_path);
+            if (!string.IsNullOrEmpty(ex))
+                return new string[] { asset_path };     //路径中含有扩展名,返回原路径。
+
+            //如果路径中不包含扩展名，根据资源类型填充扩展名
+            Type atype = typeof(T);
+            AssetExtentions ae = null;
+            if (AssetExtentionsMap.TryGetValue(atype, out ae))
+            {
+                string[] ps = new string[ae.Extentions.Count];
+                for (int i = 0, l = ps.Length; i < l; i++)
+                    ps[i] = AutoFillPathRoot + asset_path + ae.Extentions[i];  //拼接扩展名
+                return ps;
+            }
+
+            return new string[] { asset_path + ".asset" };
         }
     }
 

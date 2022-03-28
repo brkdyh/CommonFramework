@@ -42,12 +42,15 @@ namespace EasyAssets
             public string folderName = "";
             Texture icon;
 
+            bool valid;
+
             public FolderData(string assetPath)
             {
                 this.assetPath = assetPath;
                 absPath = getAbsPath(assetPath);
                 folderName = getLatePathName(assetPath);
                 icon = AssetDatabase.GetCachedIcon(assetPath);
+                valid = Directory.GetDirectories(absPath, "*", SearchOption.TopDirectoryOnly).Length > 0;
             }
 
             public void onDrawFolderData()
@@ -61,6 +64,9 @@ namespace EasyAssets
                 EditorGUILayout.EndHorizontal();
 
                 address = EditorGUILayout.TextField("前缀", address);
+
+                if (!valid)
+                    EditorGUILayout.HelpBox("所选路径没有子路径,无法设置 AssetBundle Name。", MessageType.Error);
 
                 EditorGUILayout.EndVertical();
             }
@@ -116,9 +122,12 @@ namespace EasyAssets
 
         public static void SetFolderTag()
         {
+            string res = "已完成以下路径 AssetBundle Name 设置:\n";
+
             foreach (var f in instance.folderDatas)
             {
-                //Debug.Log(absPath);
+                res += string.Format("\n路径: {0}", f.assetPath);
+                //Debug.Log(f.absPath);
                 if (!Directory.Exists(f.absPath))
                     continue;
 
@@ -131,9 +140,13 @@ namespace EasyAssets
                         Debug.LogWarningFormat("Directory at {0} is not Asset!", asset_dir);
                         continue;
                     }
-                    ai.assetBundleName = f.address + getLatePathName(asset_dir);
+                    var fd_name = getLatePathName(asset_dir);
+                    ai.assetBundleName = f.address + fd_name;
+                    res += string.Format("\n => {0} : {1}", fd_name, ai.assetBundleName);
                 }
             }
+
+            EditorUtility.DisplayDialog("EasyAssets", res, "关闭");
         }
 
         static string projectRootPath

@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEditor;
 
-namespace EasyAsset.EditorCoroutines
+namespace EasyAssets.EditorCoroutines
 {
 	public class CoroutineWindowExample : EditorWindow
 	{

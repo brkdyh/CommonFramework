@@ -16,6 +16,35 @@ MonoBehaviour:
   RefrenceCheckTime: 1
   DisposeCacheTime: 5
   AssetBundleLiveTime: 5
+  AutoFillPathRoot: 
+  AssetExtentionsMap:
+  - Type: Texture
+    Extentions:
+    - .png
+    - .jpg
+    - .psd
+    - .jpeg
+  - Type: Texture2D
+    Extentions:
+    - .png
+    - .jpg
+    - .psd
+    - .jpeg
+  - Type: TextAsset
+    Extentions:
+    - .bytes
+    - .csv
+    - .xml
+    - .json
+    - .html
+    - .txt
+  - Type: AudioClip
+    Extentions:
+    - .mp3
+    - .wav
+  - Type: GameObject
+    Extentions:
+    - .prefab
   UnmanagedBundles: []
   RemoteBundleRootDomain: 
   RequestTimeOut: 30

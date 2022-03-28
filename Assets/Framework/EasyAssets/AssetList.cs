@@ -89,11 +89,23 @@ namespace EasyAssets
             }
         }
 
-        public string GetBundleName(string asset_path)
+        public string GetAssetBundleName<T>(string asset_path)
+            where T : UnityEngine.Object
+        {
+            var format_paths = PathHelper.AutoFillExAssetPath<T>(asset_path);
+            foreach (var path in format_paths)
+            {
+                if (asset2bundleMapping.ContainsKey(path))
+                    return asset2bundleMapping[path];
+            }
+
+            return "null";
+        }
+
+        public string GetSceneBundleName(string asset_path)
         {
             if (asset2bundleMapping.ContainsKey(asset_path))
                 return asset2bundleMapping[asset_path];
-
             return "null";
         }
     }

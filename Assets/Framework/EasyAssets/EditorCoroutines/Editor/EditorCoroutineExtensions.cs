@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEditor;
 
-namespace EasyAsset.EditorCoroutines
+namespace EasyAssets.EditorCoroutines
 {
 	public static class EditorCoroutineExtensions
 	{

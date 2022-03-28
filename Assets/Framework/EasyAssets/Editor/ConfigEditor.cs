@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,10 +15,12 @@ namespace EasyAssets
         bool f4;
 
         SerializedProperty unmanagedProperty;
+        SerializedProperty assetExtentionProperty;
 
         private void OnEnable()
         {
             unmanagedProperty = serializedObject.FindProperty("UnmanagedBundles");
+            assetExtentionProperty = serializedObject.FindProperty("AssetExtentionsMap");
         }
 
         public override void OnInspectorGUI()
@@ -45,7 +48,22 @@ namespace EasyAssets
             GUILayout.Space(5);
             config.LoadPath = EditorGUILayout.TextField("外部资源加载路径:", config.LoadPath);
 
+            GUILayout.Space(15);
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("路径自动填充根目录:", "Assets/");
+            GUILayout.FlexibleSpace();
+            config.AutoFillPathRoot = EditorGUILayout.TextField("", config.AutoFillPathRoot);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             GUILayout.Space(10);
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.PropertyField(assetExtentionProperty, new GUIContent("设置资源扩展名填充:"), true);
+            EditorGUILayout.HelpBox("根据资源类型，自动填充对应资源的扩展名。未配置的资源类型默认使用 \".asset\" 作为扩展名。", MessageType.Info);
+            EditorGUILayout.EndVertical(); 
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             f1 = EditorGUILayout.Foldout(f1, "AssetBundle卸载时间:");
@@ -102,6 +120,49 @@ namespace EasyAssets
                 EditorUtility.SetDirty(target);
                 AssetDatabase.SaveAssets();
             }
+        }
+
+        static string editorPath = "";
+        public static string GetEditorPath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(editorPath))
+                {
+                    var path = Directory.GetDirectories(Application.dataPath, "*", SearchOption.AllDirectories);
+                    foreach (var p in path)
+                    {
+                        if (p.EndsWith("EasyAssets"))
+                        {
+                            editorPath = p;
+                            break;
+                        }
+                    }
+                }
+                return editorPath;
+            }
+        }
+
+        [MenuItem("公共框架/Easy Assets/打开配置文件", priority = 150)]
+        public static void SelectConfig()
+        {
+            var abs_dir = GetEditorPath + "/Resources";
+            var rel_dir = abs_dir.Replace(Application.dataPath, "Assets");
+            var rel_path = rel_dir + "/EasyAssetConfig.asset";
+
+            var cfg = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(rel_path);
+            if (cfg == null)
+            {
+                if (!Directory.Exists(abs_dir))
+                    Directory.CreateDirectory(abs_dir);
+
+                AssetDatabase.CreateAsset(CreateInstance<EasyAssetConfig>(), rel_path);
+                AssetDatabase.Refresh();
+
+                cfg = AssetDatabase.LoadAssetAtPath<EasyAssetConfig>(rel_path);
+            }
+
+            Selection.activeObject = cfg;
         }
     }
 }

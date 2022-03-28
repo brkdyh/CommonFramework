@@ -159,7 +159,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
         {//如果是内部资源,直接使用Resources加载
             return Resources.Load<T>(assetPath);
         }
-        var bundleName = externalAssetList.GetBundleName(assetPath);
+        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
             return Resources.Load<T>(assetPath);
@@ -262,7 +262,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return;
         }
 
-        var bundleName = externalAssetList.GetBundleName(assetPath);
+        var bundleName = externalAssetList.GetAssetBundleName<T>(assetPath);
         if (bundleName == "null")
         {//如果是内部资源,直接使用Resources加载
             var request = Resources.LoadAsync<T>(assetPath);
@@ -348,7 +348,7 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
 
     bool LoadScene_Internal(string scenePath, Action onLoadScene, Action<float> onProgress)
     {
-        var bundleName = externalAssetList.GetBundleName(scenePath);
+        var bundleName = externalAssetList.GetSceneBundleName(scenePath);
         if (bundleName == "null")
             return false;
 
