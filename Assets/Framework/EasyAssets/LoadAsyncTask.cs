@@ -204,6 +204,11 @@ namespace EasyAssets
 
         void TrackingAsset(UnityEngine.Object asset, object refrence)
         {
+            if (asset == null)
+            {
+                Debug.LogErrorFormat("EasyAssets Tracking Error =>\n 无法跟踪空资源引用");
+                return;
+            }
             //追踪引用
             BundleLoadTrack track = new BundleLoadTrack(easyBundles.Count);
             foreach (var eb in easyBundles)

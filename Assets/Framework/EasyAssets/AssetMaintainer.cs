@@ -192,11 +192,13 @@ public class AssetMaintainer : MonoSingleton<AssetMaintainer>
             return null;
         }
 
-        track.AddBundle(direct_bundle.bundleName);
         T asset = direct_bundle.GetAsset<T>(assetPath);
-        track.SetHash(asset.GetHashCode());
-        AddBundleLoadTrack(track);
-
+        if (asset != null)
+        {
+            track.AddBundle(direct_bundle.bundleName);
+            track.SetHash(asset.GetHashCode());
+            AddBundleLoadTrack(track);
+        }
         return asset;
     }
 

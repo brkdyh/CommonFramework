@@ -9,6 +9,6 @@ EditorBuildSettings:
     path: Assets/Framework/SampleECS/Example/Example.unity
     guid: d532f302f4ab54ba18df208222e96c1c
   - enabled: 1
-    path: Assets/Framework/GIF/Example/TexFormatTest.unity
+    path: Assets/Framework/GIF/Example/TextureFormatTest/TexFormatTest.unity
     guid: 5cdd161aa3a9845049898a4fc54f0921
   m_configObjects: {}

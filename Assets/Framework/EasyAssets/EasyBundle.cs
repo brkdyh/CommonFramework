@@ -172,6 +172,14 @@ namespace EasyAssets
             if (isLoaded)
             {
                 var asset = bundle.LoadAsset<T>(assetPath);
+                if (asset == null)
+                {
+                    if (bundle.Contains(assetPath))
+                        Debug.LogErrorFormat("EasyAssets Null Asset Error =>\n 该资源包[{0}] 中不包含作为 类型<{1}> 的 资源({2})", bundleName, typeof(T), assetPath);
+                    else
+                        Debug.LogErrorFormat("EasyAssets Null Asset Error =>\n 该资源包[{0}] 中不包含资源({1})", bundleName, assetPath);
+                    return null;
+                }
                 loadedAssets.Add(assetPath, asset);
                 hash2assetpathMap.Add(asset.GetHashCode(), assetPath);
                 return loadedAssets[assetPath] as T;
