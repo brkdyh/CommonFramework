@@ -93,20 +93,36 @@ namespace MessageSystem
         public string getSenderString()
         {
             if (string.IsNullOrEmpty(_senderString))
+                _senderString = string.Format("{0}:{1}()", Sender_Type, Sender_Mothod);
+            return _senderString;
+        }
+
+        string _handlerString;
+        public string getHandlerString()
+        {
+            System.Text.StringBuilder _handlerStringBD = new System.Text.StringBuilder();
+            if (string.IsNullOrEmpty(_handlerString))
             {
-                _senderString = string.Format("{0}:{1}[", Sender_Type, Sender_Mothod);
+                _handlerStringBD = new System.Text.StringBuilder();
+                _handlerStringBD.AppendFormat("{0}(", Handler_Method.Substring(0, Handler_Method.IndexOf("(")));
                 if (Sender_Params == null
-                    || Sender_Params.Length == 0)
-                    _senderString += "null";
+                || Sender_Params.Length == 0)
+                    _handlerStringBD.Append("null");
                 else
                 {
-                    foreach (var p in Sender_Params)
-                        _senderString += (p + ",");
+                    for (int i = 0; i < Sender_Params.Length; i++)
+                    {
+                        var p = Sender_Params[i];
+                        if (i < Sender_Params.Length - 1)
+                            _handlerStringBD.Append(p + ",");
+                        else
+                            _handlerStringBD.Append(p);
+                    }
                 }
-                var rm_index = _senderString.LastIndexOf(',');
-                _senderString = (rm_index > -1 ? _senderString.Remove(rm_index) : _senderString) + "]";
+                _handlerStringBD.Append(")");
+                _handlerString = _handlerStringBD.ToString();
             }
-            return _senderString;
+            return _handlerString;
         }
     }
 
@@ -123,13 +139,21 @@ namespace MessageSystem
             messageCall.Message_UID = msg_id;
             messageCall.Method_ID = method_id;
 
-            var sps = sender_info.Split(' ');
+            //var sps = sender_info.Split(' ');
+            //var mps = sps[0].Split(':');
+            //messageCall.Send_timeStamp = send_timeStamp;
+            //messageCall.Sender_Type = mps[0];
+            //messageCall.Sender_Mothod = mps[1].Substring(0, mps[1].IndexOf('('));
+            //messageCall.Sender_Params = new string[params_info.Length];
+            //messageCall.Sender_StackTrace = sender_info.Substring(sps[0].Length);
+            var rp = sender_info.Replace("(at ", "&");
+            var sps = rp.Split('&');
             var mps = sps[0].Split(':');
             messageCall.Send_timeStamp = send_timeStamp;
             messageCall.Sender_Type = mps[0];
             messageCall.Sender_Mothod = mps[1].Substring(0, mps[1].IndexOf('('));
             messageCall.Sender_Params = new string[params_info.Length];
-            messageCall.Sender_StackTrace = sender_info.Substring(sps[0].Length);
+            messageCall.Sender_StackTrace = "(at " + sps[1];
 
             messageCall.Handle_timeStamp = handle_timeStamp;
             messageCall.Handler_Method = handle_method;
@@ -601,7 +625,16 @@ namespace MessageSystem
                 string sender_info = "";
                 var frames = StackTraceUtility.ExtractStackTrace().Split('\n');
                 if (frames.Length > 1)
-                    sender_info = (frames[1]);
+                {
+                    int idx = 0;
+                    foreach (var frame in frames)
+                    {
+                        idx++;
+                        if (frame.StartsWith("MessageSystem."))
+                            break;
+                    }
+                    sender_info = (frames[idx]);
+                }
                 else
                     sender_info = (frames[0]);
 

@@ -359,7 +359,7 @@ namespace MessageSystem
                     GUILayout.BeginHorizontal();
                     DrawLabel(string.Format("Handled at [{0}]", call.GetHandleTime.ToString("HH:mm:ss :fff")));
                     DrawLabel("Handle Method =>");
-                    DrawLabel(call.Handler_Method, ColorDefine.orange);
+                    DrawLabel(call.getHandlerString(), ColorDefine.orange);
                     GUILayout.FlexibleSpace();
                     GUILayout.EndHorizontal();
                     GUILayout.Space(2);
