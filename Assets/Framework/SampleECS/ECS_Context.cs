@@ -139,7 +139,7 @@ namespace SampleECS
         int _context_idx = -1;
         public int context_idx { get { return _context_idx; } }
 
-
+        public uint FrameCount { get; private set; } = 0;
 
         #region  Container
         static int context_ptr = -1;
@@ -159,6 +159,13 @@ namespace SampleECS
 
         #endregion
 
+        #region Static Components
+
+        protected uint[] static_dirtyMarkFront = null;
+        protected uint[] static_dirtyMarkBack = null;
+
+        #endregion
+
         #region Entity Map
 
         Dictionary<uint, int> euid_idx_map = new Dictionary<uint, int>();               //Entity Uid -> Pool Index Map
@@ -166,6 +173,8 @@ namespace SampleECS
         #endregion
 
         #region Context
+
+        public virtual void InitStaticCom() { }
 
         public virtual void InitComPool(int context_id) { }
 
@@ -224,6 +233,8 @@ namespace SampleECS
 
         void InitECSContext()
         {
+            typeof(ECS_Context).GetMethod("InitStaticCom").Invoke(this, null);
+
             //Init Component Pools
             typeof(ECS_Context).GetMethod("InitComPool").Invoke(this, new object[] { context_idx });
 
@@ -460,7 +471,7 @@ namespace SampleECS
 
                 return null;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogException(ex);
                 return null;
@@ -531,71 +542,101 @@ namespace SampleECS
                 if (!system_collections.TryGetValue(type, out collection))
                     return;
                 var entities = collection.entities;
+                bool is_system_static = system is ECS_Static_System;
                 if (system.getSystemMode == SystemMode.Loop)
                 {
                     system.BeforeExcute();              //调用 BeforeExcute
 
-                    var len = collection.RealLength;
-                    for (int i = 0; i < len; i++)
+                    if (is_system_static)
                     {
-                        system.__Excute(entities[i]);
+                        var ss = system as ECS_Static_System;
+                        if (FrameCount > 0 || ss.runAtFirstFrame)
+                            ss.__ExcuteStatic(this);
                     }
-
+                    else
+                    {
+                        var len = collection.RealLength;
+                        for (int i = 0; i < len; i++)
+                        {
+                            system.__Excute(entities[i]);
+                        }
+                    }
                     system.AfterExcute();              //调用 AfterExcute
                 }
                 else if (system.getSystemMode == SystemMode.Action)
                 {
-                    bool call_before = false;
-
-                    var trigger_types = system.getTrigger.type_ids;
-                    var len = collection.RealLength;
-                    for (int i = 0; i < len; i++)
+                    if (is_system_static)
                     {
-                        var entity = entities[i];
-
-                        //whether Entity Fit Condition of System-Trigger
-                        //为了更高的执行效率，不封装这段代码以减少方法调用次数
-                        var e_dirty_ptr = entity.com_dirtyMarkFront_Ptr;
-                        bool dirty = false;
-                        if (e_dirty_ptr >= 0)
+                        var ss = system as ECS_Static_System;
+                        if (FrameCount > 0 || ss.runAtFirstFrame)
                         {
-                            //whether entity fit every condition of System-Trigger
-                            dirty = true;
-                            var dm = entity.com_dirtyMarkFront;
-                            for (int j = 0, l1 = trigger_types.Length; j < l1; j++)
+                            var trigger_types = system.getTrigger.type_ids;
+                            for (int i = 0, l = trigger_types.Length; i < l; i++)
                             {
-                                int cur_type = trigger_types[j];
-                                bool contain_type = false;
-                                for (int k = 0, l2 = e_dirty_ptr + 1; k < l2; k++)
+                                if (static_dirtyMarkFront[i] >= FrameCount)
                                 {
-                                    if (dm[k] == cur_type)
-                                    {
-                                        contain_type = true;
-                                        break;
-                                    }
-                                }
-
-                                if (!contain_type)
-                                {
-                                    dirty = false;
+                                    ss.BeforeExcute();
+                                    ss.__ExcuteStatic(this);
+                                    ss.AfterExcute();
                                     break;
                                 }
                             }
                         }
-
-                        if (dirty)
-                        {
-                            if (!call_before)
-                            {
-                                system.BeforeExcute();
-                                call_before = true;
-                            }
-                            system.__Excute(entity);
-                        }
                     }
+                    else
+                    {
+                        bool call_before = false;
 
-                    if (call_before)
-                        system.AfterExcute();
+                        var trigger_types = system.getTrigger.type_ids;
+                        var len = collection.RealLength;
+                        for (int i = 0; i < len; i++)
+                        {
+                            var entity = entities[i];
+
+                            //whether Entity Fit Condition of System-Trigger
+                            //为了更高的执行效率，不封装这段代码以减少方法调用次数
+                            var e_dirty_ptr = entity.com_dirtyMarkFront_Ptr;
+                            bool dirty = false;
+                            if (e_dirty_ptr >= 0)
+                            {
+                                //whether entity fit every condition of System-Trigger
+                                dirty = true;
+                                var dm = entity.com_dirtyMarkFront;
+                                for (int j = 0, l1 = trigger_types.Length; j < l1; j++)
+                                {
+                                    int cur_type = trigger_types[j];
+                                    bool contain_type = false;
+                                    for (int k = 0, l2 = e_dirty_ptr + 1; k < l2; k++)
+                                    {
+                                        if (dm[k] == cur_type)
+                                        {
+                                            contain_type = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!contain_type)
+                                    {
+                                        dirty = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (dirty)
+                            {
+                                if (!call_before)
+                                {
+                                    system.BeforeExcute();
+                                    call_before = true;
+                                }
+                                system.__Excute(entity);
+                            }
+                        }
+
+                        if (call_before)
+                            system.AfterExcute();
+                    }
                 }
 
             }
@@ -614,6 +655,16 @@ namespace SampleECS
                 ExcuteSystem(sys);
 
             ExcutingSystem = false;
+        }
+
+        void CleanStaticMark()
+        {
+            FrameCount++;
+
+            //Switch Cache
+            var temp_mark = static_dirtyMarkBack;
+            static_dirtyMarkBack = static_dirtyMarkFront;
+            static_dirtyMarkFront = temp_mark;
         }
 
         void CleanEntityMark()
@@ -673,6 +724,9 @@ namespace SampleECS
 
             //Excute System;
             DoExcute();
+
+            //Clean Static Mark
+            CleanStaticMark();
 
             //Clean Dirty Mark
             CleanEntityMark();

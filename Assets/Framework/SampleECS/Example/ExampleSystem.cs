@@ -4,6 +4,24 @@ using UnityEngine;
 using SampleECS;
 
 [System(context = "Game", systemMode = SystemMode.Action)]
+public class MsgStaticSystem : ECS_Game_Static_System
+{
+    //如果想在Context启动的第一帧执行系统方法，将此参数改为true
+    //public override bool runAtFirstFrame => true;
+
+    public override ECS_Trigger GetTrigger()
+    {
+        return new ECS_Trigger(Game_Component_Type.Static_MsgComp);
+    }
+
+    public override void ExcuteStatic(ECS_Game_Context context)
+    {
+        base.ExcuteStatic(context);
+        Debug.Log(context.static_msgcomp.msg);
+    }
+}
+
+[System(context = "Game", systemMode = SystemMode.Action)]
 public class CreateSystem : ECS_Game_System
 {
     public override bool GetSystemMatch(ECS_Game_Entity entity)

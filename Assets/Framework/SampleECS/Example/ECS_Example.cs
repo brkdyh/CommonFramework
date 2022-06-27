@@ -38,12 +38,17 @@ public class ECS_Example : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            ECS_Context.EnableContext("game");
+            ECS_Context.EnableContext("Game");
         }
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            ECS_Context.DisableContext("game");
+            ECS_Context.DisableContext("Game");
+        }
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            context.Replace_MsgComp(new MsgComp() { msg = "Message From Static Component" });
         }
     }
 
@@ -51,5 +56,12 @@ public class ECS_Example : MonoBehaviour
     {
         GUILayout.Label("FPS: " + disFPS, "box", GUILayout.Width(200), GUILayout.Height(50));
         GUILayout.Label("Entity Count: " + count, "box", GUILayout.Width(200), GUILayout.Height(50));
+
+        if (GUILayout.Button("EnableContext", GUILayout.Width(200), GUILayout.Height(50)))
+            ECS_Context.EnableContext("Game");
+        if (GUILayout.Button("DisableContext", GUILayout.Width(200), GUILayout.Height(50)))
+            ECS_Context.DisableContext("Game");
+        if (GUILayout.Button("Show Message", GUILayout.Width(200), GUILayout.Height(50)))
+            context.Replace_MsgComp(new MsgComp() { msg = "Message From Static Component" });
     }
 }

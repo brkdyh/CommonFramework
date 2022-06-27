@@ -7,6 +7,19 @@ namespace SampleECS
 	{
 		public ECS_Game_Entity CreateEntity() { return __CreateEntity<ECS_Game_Entity>(); }
 
+		/******** Begin Static Components Code ********/
+		public MsgComp static_msgcomp = new MsgComp();
+		public void Replace_MsgComp(MsgComp com) {
+			static_msgcomp = com;
+			if (ExcutingSystem) static_dirtyMarkBack[Game_Component_Type.Static_MsgComp] = FrameCount + 1;
+			else static_dirtyMarkFront[Game_Component_Type.Static_MsgComp] = FrameCount;
+		}
+		public override void InitStaticCom() {
+			static_dirtyMarkFront = new uint[Game_Component_Type.STATIC_TYPE_COUNT];
+			static_dirtyMarkBack = new uint[Game_Component_Type.STATIC_TYPE_COUNT];
+		}
+		/******** End Static Components Code ********/
+
 		public ECS_Component_Pool<IDComp> pool_IDComp;
 		public ECS_Component_Pool<PositionComp> pool_PositionComp;
 		public ECS_Component_Pool<TransformComp> pool_TransformComp;

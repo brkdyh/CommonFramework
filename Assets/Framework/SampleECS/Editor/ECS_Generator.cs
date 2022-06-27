@@ -75,7 +75,7 @@ namespace SampleECS
 				Gen_Context_Wrap(gen_path + $"ECS_{context_name}_Context_Wrap.cs", context_name, component_types);
 				Gen_Component_Wrap(gen_path + $"ECS_{context_name}_Component_Wrap.cs", context_name, component_types);
 				Gen_Entity_Wrap(gen_path + $"ECS_{context_name}_Entity_Wrap" + "{0}.cs", context_name, component_types);
-				Gen_System_Wrap(gen_path + $"ECS_{context_name}_System.cs", context_name);
+				Gen_System_Wrap(gen_path + $"ECS_{context_name}_System_Wrap.cs", context_name);
 			}
 
 			AssetDatabase.Refresh();
@@ -96,36 +96,54 @@ namespace SampleECS
 			_sctipt.AppendLine("\t\tpublic ECS_Game_Entity CreateEntity() { return __CreateEntity<ECS_Game_Entity>(); }");
 			_sctipt.AppendLine("");
 
+			List<System.Type> context_com = new List<System.Type>();	//static components list
+			List<System.Type> entity_com = new List<System.Type>();		//entity components list
 			foreach (var type in asm_all_types)
 			{
 				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
 				if (obs != null)
 					continue;
-
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
 
 				if (ca != null)
 				{
-					_sctipt.AppendLine(string.Format("\t\tpublic ECS_Component_Pool<{0}> pool_{1};", type, type));
+					if (ca.isStatic)
+						context_com.Add(type);
+					else
+						entity_com.Add(type);
 				}
 			}
 
+			//Static Components Code
+			_sctipt.AppendLine("\t\t/******** Begin Static Components Code ********/");
+			foreach (var type in context_com)
+			{
+				_sctipt.AppendLine($"\t\tpublic {type} static_{type.ToString().ToLower()} = new {type}();");
+				_sctipt.AppendLine($"\t\tpublic void Replace_{type}({type} com) " + "{");
+				_sctipt.AppendLine($"\t\t\tstatic_{type.ToString().ToLower()} = com;");
+				_sctipt.AppendLine($"\t\t\tif (ExcutingSystem) static_dirtyMarkBack[Game_Component_Type.Static_{type}] = FrameCount + 1;");
+				_sctipt.AppendLine($"\t\t\telse static_dirtyMarkFront[Game_Component_Type.Static_{type}] = FrameCount;");
+				_sctipt.AppendLine("\t\t}");
+			}
+
+			_sctipt.AppendLine("\t\tpublic override void InitStaticCom() {");
+			_sctipt.AppendLine("\t\t\tstatic_dirtyMarkFront = new uint[Game_Component_Type.STATIC_TYPE_COUNT];");
+			_sctipt.AppendLine("\t\t\tstatic_dirtyMarkBack = new uint[Game_Component_Type.STATIC_TYPE_COUNT];");
+			_sctipt.AppendLine("\t\t}");
+			_sctipt.AppendLine("\t\t/******** End Static Components Code ********/");
+			_sctipt.AppendLine("");
+
+			foreach (var type in entity_com)
+				_sctipt.AppendLine(string.Format("\t\tpublic ECS_Component_Pool<{0}> pool_{1};", type, type));
+
 			_sctipt.AppendLine("\t\tpublic override void InitComPool(int context_id)");
 			_sctipt.AppendLine("\t\t{");
-			foreach (var type in asm_all_types)
+			foreach (var type in entity_com)
 			{
-				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
-				if (obs != null)
-					continue;
-
-				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
-				if (ca != null)
-				{
-					_sctipt.AppendLine("\t\t\tcomponent_pool_container_ptr++;");
-					_sctipt.AppendLine(string.Format("\t\t\tpool_{0} = ECS_Component_Pool<{1}>.GetPool(context_id,typeof({2}));", type, type, type));
-					_sctipt.AppendLine("\t\t\tECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr," + string.Format("pool_{0}", type) + ");");
-					_sctipt.AppendLine("");
-				}
+				_sctipt.AppendLine("\t\t\tcomponent_pool_container_ptr++;");
+				_sctipt.AppendLine(string.Format("\t\t\tpool_{0} = ECS_Component_Pool<{1}>.GetPool(context_id,typeof({2}));", type, type, type));
+				_sctipt.AppendLine("\t\t\tECS_Utils.SetArrayElement(ref component_pool_container,component_pool_container_ptr," + string.Format("pool_{0}", type) + ");");
+				_sctipt.AppendLine("");
 			}
 			_sctipt.AppendLine("\t\t}");
 
@@ -154,20 +172,40 @@ namespace SampleECS
 			_sctipt.AppendLine($"\tpublic static partial class {context_name}_Component_Type");
 			_sctipt.AppendLine("\t{");
 
-			int com_id = 0;
+			List<System.Type> context_com = new List<System.Type>();    //static components list
+			List<System.Type> entity_com = new List<System.Type>();     //entity components list
 			foreach (var type in asm_all_types)
 			{
 				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
 				if (obs != null)
 					continue;
-
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
+
 				if (ca != null)
 				{
-					_sctipt.AppendLine(string.Format("\t\t/* Component <{0}> ID */", type));
-					_sctipt.AppendLine(string.Format("\t\tpublic const int {0} = {1};", type, com_id));
-					com_id++;
+					if (ca.isStatic)
+						context_com.Add(type);
+					else
+						entity_com.Add(type);
 				}
+			}
+
+			_sctipt.AppendLine("\t\t/******** Begin Static Components Code ********/");
+			int static_id = 0;
+			foreach (var type in context_com)
+			{
+				_sctipt.AppendLine($"\t\tpublic const int Static_{type} = {static_id};");
+				static_id++;
+			}
+			_sctipt.AppendLine("\t\t/******** End Static Components Code ********/");
+			_sctipt.AppendLine("");
+
+			int com_id = 0;
+			foreach (var type in entity_com)
+			{
+				_sctipt.AppendLine(string.Format("\t\t/* Component <{0}> ID */", type));
+				_sctipt.AppendLine(string.Format("\t\tpublic const int {0} = {1};", type, com_id));
+				com_id++;
 			}
 			_sctipt.AppendLine("\t}");
 
@@ -177,6 +215,7 @@ namespace SampleECS
 			_sctipt.AppendLine($"\tpublic static partial class {context_name}_Component_Type");
 			_sctipt.AppendLine("\t{");
 
+			_sctipt.AppendLine($"\t\tpublic const int STATIC_TYPE_COUNT = {context_com.Count};");
 			_sctipt.AppendLine("");
 			_sctipt.AppendLine("\t\tpublic static int COMPONENT_TYPE_COUNT { get; private set; } = 0;");
 			_sctipt.AppendLine("\t\tinternal static void SetTypeCount(int count) { COMPONENT_TYPE_COUNT = count; }");
@@ -187,18 +226,8 @@ namespace SampleECS
 			_sctipt.AppendLine("\t\tpublic static void Init()");
 			_sctipt.AppendLine("\t\t{");
 			_sctipt.AppendLine("\t\t\tif(inited) return;");
-			foreach (var type in asm_all_types)
-			{
-				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
-				if (obs != null)
-					continue;
-
-				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
-				if (ca != null)
-				{
-					_sctipt.AppendLine(string.Format("\t\t\tCOM_TYPE_ID_MAP.Add(\"{0}\",{1});", type.ToString(), type));
-				}
-			}
+			foreach (var type in entity_com)
+				_sctipt.AppendLine(string.Format("\t\t\tCOM_TYPE_ID_MAP.Add(\"{0}\",{1});", type.ToString(), type));
 
 			_sctipt.AppendLine("\t\t\tSetTypeCount(COM_TYPE_ID_MAP.Count);");
 			_sctipt.AppendLine("\t\t\tinited = true;");
@@ -272,7 +301,8 @@ namespace SampleECS
 					continue;
 
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
-				if (ca != null)
+				if (ca != null
+					&& !ca.isStatic)
 				{
 					_sctipt.AppendLine(string.Format("\t\t/************ <{0}>Begin Component Code : " + type + " ************/", counter));
 					string com_field = type.ToString().ToLower();
@@ -339,6 +369,10 @@ namespace SampleECS
 			_sctipt.AppendLine("*/");
 			_sctipt.AppendLine("namespace SampleECS");
 			_sctipt.AppendLine("{");
+
+			_sctipt.AppendLine("\t/// <summary>");
+			_sctipt.AppendLine($"\t/// System In \"{context_name}\" Context");
+			_sctipt.AppendLine("\t/// </summary>");
 			_sctipt.AppendLine($"\tpublic class ECS_{context_name}_System : ECS_System");
 			_sctipt.AppendLine("\t{");
 
@@ -366,6 +400,21 @@ namespace SampleECS
 			_sctipt.AppendLine("");
 
 			_sctipt.AppendLine("\t}");
+
+			_sctipt.AppendLine("");
+			_sctipt.AppendLine("\t/// <summary>");
+			_sctipt.AppendLine($"\t/// Static System In \"{context_name}\" Context");
+			_sctipt.AppendLine("\t/// </summary>");
+			_sctipt.AppendLine($"\tpublic class ECS_{context_name}_Static_System : ECS_Static_System");
+			_sctipt.AppendLine("\t{");
+			_sctipt.AppendLine("\t\tpublic override void __ExcuteStatic(ECS_Context context)");
+			_sctipt.AppendLine("\t\t{");
+			_sctipt.AppendLine("\t\t\tbase.__ExcuteStatic(context);");
+			_sctipt.AppendLine($"\t\t\tExcuteStatic(context as ECS_{context_name}_Context);");
+			_sctipt.AppendLine("\t\t}");
+			_sctipt.AppendLine($"\t\tpublic virtual void ExcuteStatic(ECS_{context_name}_Context context) " + "{ }");
+			_sctipt.AppendLine("\t}");
+
 			_sctipt.AppendLine("}");
 			using (var e_file = File.CreateText(file_path))
 			{

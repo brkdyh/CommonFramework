@@ -3,6 +3,9 @@
 */
 namespace SampleECS
 {
+	/// <summary>
+	/// System In "Game" Context
+	/// </summary>
 	public class ECS_Game_System : ECS_System
 	{
 		protected ECS_Game_Context context { get { return __context as ECS_Game_Context; } }
@@ -24,5 +27,18 @@ namespace SampleECS
 		}
 		public virtual void Excute(ECS_Game_Entity entity) { }
 
+	}
+
+	/// <summary>
+	/// Static System In "Game" Context
+	/// </summary>
+	public class ECS_Game_Static_System : ECS_Static_System
+	{
+		public override void __ExcuteStatic(ECS_Context context)
+		{
+			base.__ExcuteStatic(context);
+			ExcuteStatic(context as ECS_Game_Context);
+		}
+		public virtual void ExcuteStatic(ECS_Game_Context context) { }
 	}
 }

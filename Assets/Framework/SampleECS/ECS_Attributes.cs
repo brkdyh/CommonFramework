@@ -35,7 +35,8 @@ namespace SampleECS
     {
         public SystemMode systemMode = SystemMode.Action;
         public string context;
-        public SystemAttribute() { systemMode = SystemMode.Action; context = "All"; }
+        public SystemAttribute() { }
+        public SystemAttribute(string context) { systemMode = SystemMode.Action; this.context = context; }
         public SystemAttribute(SystemMode systemMode, string context) { this.systemMode = systemMode; this.context = context; }
     }
 }

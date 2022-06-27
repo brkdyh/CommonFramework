@@ -8,6 +8,12 @@ public struct TestComp
 
 }
 
+[Component("Game", isStatic = true)]
+public struct MsgComp
+{
+    public string msg;
+}
+
 [Component("Game")]
 public struct IDComp
 {

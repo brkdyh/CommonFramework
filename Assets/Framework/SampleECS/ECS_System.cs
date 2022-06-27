@@ -94,4 +94,21 @@ namespace SampleECS
             }
         }
     }
+
+    public class ECS_Static_System : ECS_System
+    {
+        /// <summary>
+        /// 是否在第一帧执行
+        /// </summary>
+        public virtual bool runAtFirstFrame { get { return false; } }
+
+        /// <summary>
+        /// 系统执行方法
+        /// </summary>
+        /// <param name="context"></param>
+        public virtual void __ExcuteStatic(ECS_Context context)
+        {
+
+        }
+    }
 }
