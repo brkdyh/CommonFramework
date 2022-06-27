@@ -134,25 +134,22 @@ namespace SampleECS
         /// </summary>
         public bool ExcutingSystem = false;
 
-        #region  Container
-
-        static int context_ptr = -1;
-        //Context容器
-        static ECS_Context[] context_container = new ECS_Context[4];
-        public static ECS_Context[] AllContexts { get { return context_container; } }
-
-        #endregion
-
         public string context_name { get; private set; } = "";
         //context idx
         int _context_idx = -1;
         public int context_idx { get { return _context_idx; } }
 
-        //全部组件池
-        public int component_pool_container_ptr = -1;
-        IECS_Component_Pool[] component_pool_container = new IECS_Component_Pool[0];
 
-        Dictionary<uint, int> euid_idx_map = new Dictionary<uint, int>();
+
+        #region  Container
+        static int context_ptr = -1;
+        //Context容器
+        static ECS_Context[] context_container = new ECS_Context[4];
+        public static ECS_Context[] AllContexts { get { return context_container; } }
+
+        //实例组件池
+        public int component_pool_container_ptr = -1;
+        protected IECS_Component_Pool[] component_pool_container = new IECS_Component_Pool[0];
 
         //全体System容器
         Dictionary<Type, ECS_System> systems_container = new Dictionary<Type, ECS_System>();
@@ -160,12 +157,27 @@ namespace SampleECS
         List<ECS_System> ex_systems_container = new List<ECS_System>();
         Dictionary<Type, ECS_Entity_Collections> system_collections = new Dictionary<Type, ECS_Entity_Collections>();
 
+        #endregion
+
+        #region Entity Map
+
+        Dictionary<uint, int> euid_idx_map = new Dictionary<uint, int>();               //Entity Uid -> Pool Index Map
+
+        #endregion
+
         #region Context
 
-        public static ECS_Context CreateContext(string context_name)
+        public virtual void InitComPool(int context_id) { }
+
+        static ECS_Context __CreateContext(string context_name)
         {
-            typeof(ECS_Component_Wrap).GetMethod("Init").Invoke(null, null);
-            ECS_Context context = new ECS_Context();
+            Type ctx_com_type = Type.GetType($"SampleECS.{context_name}_Component_Type");
+            Type ctx_type = Type.GetType($"SampleECS.ECS_{context_name}_Context");
+            //Debug.Log(ctx_com_type);
+            if (ctx_type == null || ctx_com_type == null)
+                throw new Exception($"There is No Context-Type(ECS_{context_name}_Context) named by {context_name}");
+            ctx_com_type.GetMethod("Init").Invoke(null, null);
+            ECS_Context context = Activator.CreateInstance(ctx_type) as ECS_Context;
             context_ptr++;
             context._context_idx = context_ptr;
             context.context_name = context_name;
@@ -175,31 +187,60 @@ namespace SampleECS
             return context;
         }
 
-        public static ECS_Context GetContext(int idx)
-        {
-            if (idx <= context_ptr)
-                return context_container[idx];
-            return null;
-        }
-
-        public static ECS_Context GetContext(string context_name)
+        static ECS_Context __FindContext(string context_name)
         {
             for (int i = 0, l = context_container.Length; i < l; i++)
             {
-                if (context_name == context_container[i].context_name)
+                if (context_container[i] != null
+                    && context_name == context_container[i].context_name)
                     return context_container[i];
             }
 
             return null;
         }
 
+        public static ECS_Context GetContext(string context_name)
+        {
+            var context = __FindContext(context_name);
+            if (context != null)
+                return context;
+            return __CreateContext(context_name);
+        }
+        public static T GetContext<T>(string context_name)
+            where T : ECS_Context
+        { return GetContext(context_name) as T; }
+
+        public static ECS_Context GetContext(int idx)
+        {
+            if (idx <= context_ptr)
+                return context_container[idx];
+            return null;
+        }
+        public static T GetContext<T>(int idx)
+            where T : ECS_Context
+        { return GetContext(idx) as T; }
+
+
+
         void InitECSContext()
         {
             //Init Component Pools
             typeof(ECS_Context).GetMethod("InitComPool").Invoke(this, new object[] { context_idx });
 
-            //收集 System
+            //Get All Types by Refloection
             var asm_all_types = Assembly.GetAssembly(typeof(ECS_Context)).GetTypes();
+
+            //添加静态 Component
+            foreach (var type in asm_all_types)
+            {
+                ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
+                if (ca != null && ca.isStatic)
+                {
+                    var s_com = Activator.CreateInstance(type);
+                }
+            }
+
+            //收集 System
             foreach (var type in asm_all_types)
             {
                 SystemAttribute sa = type.GetCustomAttribute<SystemAttribute>();
@@ -314,11 +355,12 @@ namespace SampleECS
 
         #region Entity
 
-        public ECS_Entity CreateEntity()
+        protected T __CreateEntity<T>()
+            where T : ECS_Entity, new()
         {
             var uid = ECS_Utils.ApplyUID();
             int ptr;
-            ECS_Entity entity = Apply(out ptr);
+            T entity = Apply<T>(out ptr) as T;
             entity.Reset(uid, _context_idx);
             if (AddEntity(entity, ptr))
                 return entity;
@@ -352,7 +394,7 @@ namespace SampleECS
             {
                 var sys = sys_kp.Value;
                 var collection = getSystemCollection(sys);
-                if (sys.GetSystemMatch(entity))
+                if (sys.__GetSystemMatch(entity))
                     collection.AddEntity(entity);
             }
 
@@ -496,7 +538,7 @@ namespace SampleECS
                     var len = collection.RealLength;
                     for (int i = 0; i < len; i++)
                     {
-                        system.Excute(entities[i]);
+                        system.__Excute(entities[i]);
                     }
 
                     system.AfterExcute();              //调用 AfterExcute
@@ -548,7 +590,7 @@ namespace SampleECS
                                 system.BeforeExcute();
                                 call_before = true;
                             }
-                            system.Excute(entity);
+                            system.__Excute(entity);
                         }
                     }
 

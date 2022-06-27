@@ -2,31 +2,31 @@
 using SampleECS;
 
 [System.Obsolete]
-[Component]
+[Component("Game")]
 public struct TestComp
 {
 
 }
 
-[Component]
+[Component("Game")]
 public struct IDComp
 {
     public int id;
 }
 
-[Component]
+[Component("Game")]
 public struct PositionComp
 {
     public Vector3 position;
 }
 
-[Component]
+[Component("Game")]
 public struct TransformComp
 {
     public Transform transform;
 }
 
-[Component]
+[Component("Game")]
 public struct CreateComp
 {
     public int create_count;

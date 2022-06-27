@@ -11,22 +11,22 @@ namespace SampleECS
         /// </summary>
         public virtual int ExcuteIndex { get; } = 0;
 
-        protected ECS_Context context;
+        protected ECS_Context __context;
 
         bool inited = false;
         public void Init(ECS_Context context)
         {
-            this.context = context;
+            __context = context;
             getTrigger = GetTrigger();
             inited = true;
-            OnSystemInited(context);
+            __OnSystemInited(context);
         }
 
         /// <summary>
         /// 当系统初始化的时候会调用
         /// </summary>
         /// <param name="core"></param>
-        public virtual void OnSystemInited(ECS_Context context)
+        protected virtual void __OnSystemInited(ECS_Context context)
         {
 
         }
@@ -43,7 +43,7 @@ namespace SampleECS
         /// 系统执行方法
         /// </summary>
         /// <param name="entity"></param>
-        public virtual void Excute(ECS_Entity entity)
+        public virtual void __Excute(ECS_Entity entity)
         {
 
         }
@@ -60,7 +60,7 @@ namespace SampleECS
         /// 获取 System 关联的 Entity 的匹配条件
         /// </summary>
         /// <returns></returns>
-        public virtual bool GetSystemMatch(ECS_Entity entity)
+        public virtual bool __GetSystemMatch(ECS_Entity entity)
         {
             return true;
         }

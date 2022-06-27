@@ -8,8 +8,10 @@ namespace SampleECS
     public class ComponentAttribute : Attribute
     {
         public bool isStatic = false;
-        public ComponentAttribute(bool isStatic = false)
+        public string context = "";
+        public ComponentAttribute(string context, bool isStatic = false)
         {
+            this.context = context;
             this.isStatic = isStatic;
         }
     }

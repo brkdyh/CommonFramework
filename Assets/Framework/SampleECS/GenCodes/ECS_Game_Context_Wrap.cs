@@ -3,13 +3,15 @@
 */
 namespace SampleECS
 {
-	public partial class ECS_Context
+	public class ECS_Game_Context : ECS_Context
 	{
+		public ECS_Game_Entity CreateEntity() { return __CreateEntity<ECS_Game_Entity>(); }
+
 		public ECS_Component_Pool<IDComp> pool_IDComp;
 		public ECS_Component_Pool<PositionComp> pool_PositionComp;
 		public ECS_Component_Pool<TransformComp> pool_TransformComp;
 		public ECS_Component_Pool<CreateComp> pool_CreateComp;
-		public void InitComPool(int context_id)
+		public override void InitComPool(int context_id)
 		{
 			component_pool_container_ptr++;
 			pool_IDComp = ECS_Component_Pool<IDComp>.GetPool(context_id,typeof(IDComp));

@@ -10,17 +10,17 @@ using System.Reflection;
 public class ECS_Example : MonoBehaviour
 {
     public int count = 50000;
-    ECS_Context context;
+    ECS_Game_Context context;
 
-    ECS_Entity gameEntity;
+    ECS_Game_Entity gameEntity;
     void Start()
     {
         Application.targetFrameRate = -1;
-        context = ECS_Context.CreateContext("game");
+        context = ECS_Context.GetContext<ECS_Game_Context>("Game");
         gameEntity = context.CreateEntity();
         CreateComp comp = new CreateComp();
         comp.create_count = count;
-        gameEntity.AddComponent(comp);
+        gameEntity.Add_CreateComp(comp);
     }
 
     int frameCount = 0;

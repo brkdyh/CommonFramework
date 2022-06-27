@@ -6,7 +6,7 @@ using LitJson;
 
 namespace SampleECS
 {
-    public partial class ECS_Entity : IDisposable
+    public class ECS_Entity : IDisposable
     {
         public uint uid { get; private set; }
         /// <summary>
@@ -15,24 +15,22 @@ namespace SampleECS
         public int _in_context_idx = -1;
         //Context
         public int contextIdx { get; private set; }
-        ECS_Context context;
 
         public bool disposed { get; set; } = false;
 
-        public void Reset(uint uid, int contextIdx)
+        public virtual void Reset(uint uid, int contextIdx)
         {
             this.uid = uid;
             this.contextIdx = contextIdx;
-            context = ECS_Context.GetContext(contextIdx);
 
             if (poolIndecies == null)
-                poolIndecies = new int[ECS_Component_Type.COMPONENT_TYPE_COUNT];
+                poolIndecies = new int[Game_Component_Type.COMPONENT_TYPE_COUNT];
             if (com_dirtyMarkFront == null)
-                com_dirtyMarkFront = new int[ECS_Component_Type.COMPONENT_TYPE_COUNT];
+                com_dirtyMarkFront = new int[Game_Component_Type.COMPONENT_TYPE_COUNT];
             if (com_dirtyMarkBack == null)
-                com_dirtyMarkBack = new int[ECS_Component_Type.COMPONENT_TYPE_COUNT];
+                com_dirtyMarkBack = new int[Game_Component_Type.COMPONENT_TYPE_COUNT];
 
-            for (int i = 0, l = ECS_Component_Type.COMPONENT_TYPE_COUNT; i < l; i++)
+            for (int i = 0, l = Game_Component_Type.COMPONENT_TYPE_COUNT; i < l; i++)
                 poolIndecies[i] = 0;
 
             entityDirty = false;
@@ -44,7 +42,7 @@ namespace SampleECS
 
         #region Component Data
 
-        int[] poolIndecies;
+        protected int[] poolIndecies;
 
         /*********** 
          * Record Component Changes by Using dual caches to record that when some compoment changes。

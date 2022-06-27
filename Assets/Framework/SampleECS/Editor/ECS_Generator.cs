@@ -42,16 +42,47 @@ namespace SampleECS
 			if (!Directory.Exists(gen_path))
 				Directory.CreateDirectory(gen_path);
 
-
 			var asm_all_types = Assembly.GetAssembly(typeof(ECS_Context)).GetTypes();
-			Gen_Context_Wrap(gen_path + "ECS_Context_Wrap.cs", asm_all_types);
-			Gen_Component_Wrap(gen_path + "ECS_Component_Wrap.cs", asm_all_types);
-			Gen_Entity_Wrap(gen_path + "ECS_Entity_Wrap.cs", asm_all_types);
+			//收集每个Context中定义的Components
+			Dictionary<string, HashSet<System.Type>> context_component_container = new Dictionary<string, HashSet<System.Type>>();
+			foreach (var type in asm_all_types)
+			{
+				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
+				if (obs != null)
+					continue;
+
+				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
+				if (ca != null)
+				{
+					if (string.IsNullOrEmpty(ca.context))
+					{
+						Debug.LogAssertionFormat($"ECS Component(Type:{type}) Must Belong to a Sperfic Context");
+						continue;
+					}
+
+
+					if (!context_component_container.ContainsKey(ca.context))
+						context_component_container.Add(ca.context, new HashSet<System.Type>());
+					context_component_container[ca.context].Add(type);
+				}
+			}
+			foreach (var context_content in context_component_container)
+			{
+				string context_name = context_content.Key;
+				System.Type[] component_types = new System.Type[context_content.Value.Count];
+				context_content.Value.CopyTo(component_types);
+
+				Gen_Context_Wrap(gen_path + $"ECS_{context_name}_Context_Wrap.cs", context_name, component_types);
+				Gen_Component_Wrap(gen_path + $"ECS_{context_name}_Component_Wrap.cs", context_name, component_types);
+				Gen_Entity_Wrap(gen_path + $"ECS_{context_name}_Entity_Wrap" + "{0}.cs", context_name, component_types);
+				Gen_System_Wrap(gen_path + $"ECS_{context_name}_System.cs", context_name);
+			}
 
 			AssetDatabase.Refresh();
 		}
 
-		static void Gen_Context_Wrap(string file_path, System.Type[] asm_all_types)
+		//生成Context代码包
+		static void Gen_Context_Wrap(string file_path, string context_name, System.Type[] asm_all_types)
 		{
 			StringBuilder _sctipt = new StringBuilder();
 			_sctipt.AppendLine("/*");
@@ -59,8 +90,11 @@ namespace SampleECS
 			_sctipt.AppendLine("*/");
 			_sctipt.AppendLine("namespace SampleECS");
 			_sctipt.AppendLine("{");
-			_sctipt.AppendLine("\tpublic partial class ECS_Context");
+			_sctipt.AppendLine($"\tpublic class ECS_{context_name}_Context : ECS_Context");
 			_sctipt.AppendLine("\t{");
+
+			_sctipt.AppendLine("\t\tpublic ECS_Game_Entity CreateEntity() { return __CreateEntity<ECS_Game_Entity>(); }");
+			_sctipt.AppendLine("");
 
 			foreach (var type in asm_all_types)
 			{
@@ -69,14 +103,14 @@ namespace SampleECS
 					continue;
 
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
-				
+
 				if (ca != null)
 				{
 					_sctipt.AppendLine(string.Format("\t\tpublic ECS_Component_Pool<{0}> pool_{1};", type, type));
 				}
 			}
 
-			_sctipt.AppendLine("\t\tpublic void InitComPool(int context_id)");
+			_sctipt.AppendLine("\t\tpublic override void InitComPool(int context_id)");
 			_sctipt.AppendLine("\t\t{");
 			foreach (var type in asm_all_types)
 			{
@@ -105,7 +139,8 @@ namespace SampleECS
 			}
 		}
 
-		static void Gen_Component_Wrap(string file_path, System.Type[] asm_all_types)
+		//生成Component代码包
+		static void Gen_Component_Wrap(string file_path, string context_name, System.Type[] asm_all_types)
 		{
 			StringBuilder _sctipt = new StringBuilder();
 			_sctipt.AppendLine("/*");
@@ -116,8 +151,9 @@ namespace SampleECS
 			_sctipt.AppendLine("{");
 
 			//entity_sctipt.AppendLine("\t\t}");
-			_sctipt.AppendLine("\tpublic static partial class ECS_Component_Type");
+			_sctipt.AppendLine($"\tpublic static partial class {context_name}_Component_Type");
 			_sctipt.AppendLine("\t{");
+
 			int com_id = 0;
 			foreach (var type in asm_all_types)
 			{
@@ -138,8 +174,15 @@ namespace SampleECS
 			_sctipt.AppendLine("");
 
 			//entity_sctipt.AppendLine("\t\tstatic Dictionary<string,int> COM_TYPE_ID_MAP = new Dictionary<string, int>();");
-			_sctipt.AppendLine("\tpublic static partial class ECS_Component_Wrap");
+			_sctipt.AppendLine($"\tpublic static partial class {context_name}_Component_Type");
 			_sctipt.AppendLine("\t{");
+
+			_sctipt.AppendLine("");
+			_sctipt.AppendLine("\t\tpublic static int COMPONENT_TYPE_COUNT { get; private set; } = 0;");
+			_sctipt.AppendLine("\t\tinternal static void SetTypeCount(int count) { COMPONENT_TYPE_COUNT = count; }");
+			_sctipt.AppendLine("\t\tstatic Dictionary<string, int> COM_TYPE_ID_MAP = new Dictionary<string, int>();");
+
+			_sctipt.AppendLine("");
 			_sctipt.AppendLine("\t\tstatic bool inited = false;");
 			_sctipt.AppendLine("\t\tpublic static void Init()");
 			_sctipt.AppendLine("\t\t{");
@@ -153,11 +196,11 @@ namespace SampleECS
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
 				if (ca != null)
 				{
-					_sctipt.AppendLine(string.Format("\t\t\tCOM_TYPE_ID_MAP.Add(\"{0}\",ECS_Component_Type.{1});", type.ToString(), type));
+					_sctipt.AppendLine(string.Format("\t\t\tCOM_TYPE_ID_MAP.Add(\"{0}\",{1});", type.ToString(), type));
 				}
 			}
 
-			_sctipt.AppendLine("\t\t\tECS_Component_Type.SetTypeCount(COM_TYPE_ID_MAP.Count);");
+			_sctipt.AppendLine("\t\t\tSetTypeCount(COM_TYPE_ID_MAP.Count);");
 			_sctipt.AppendLine("\t\t\tinited = true;");
 			_sctipt.AppendLine("\t\t}");
 
@@ -171,21 +214,56 @@ namespace SampleECS
 			}
 		}
 
-		static void Gen_Entity_Wrap(string file_path, System.Type[] asm_all_types)
+		//生成Entity代码包
+		static void Gen_Entity_Wrap(string file_path_root, string context_name, System.Type[] asm_all_types)
 		{
+			List<List<System.Type>> particial_types = new List<List<System.Type>>();        //分片类型表
+			particial_types.Add(new List<System.Type>());
+			foreach (var type in asm_all_types)
+			{
+				System.ObsoleteAttribute obs = type.GetCustomAttribute<System.ObsoleteAttribute>();
+				if (obs != null)
+					continue;
 
+				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
+				if (ca != null)
+				{
+					var cur_tl = particial_types[particial_types.Count - 1];
+					if (cur_tl.Count >= 50)
+					{
+						particial_types.Add(new List<System.Type>());
+						cur_tl = particial_types[particial_types.Count - 1];
+					}
+					cur_tl.Add(type);
+				}
+
+				for (int i = 0; i < particial_types.Count; i++)
+					Gen_Entity_Wrap_Partial(file_path_root, (i + 1), context_name, particial_types[i]);
+			}
+		}
+		static void Gen_Entity_Wrap_Partial(string file_path, int wrap_idx, string context_name, List<System.Type> asm_all_types)
+		{
+			file_path = string.Format(file_path, wrap_idx);
 			StringBuilder _sctipt = new StringBuilder();
 			_sctipt.AppendLine("/*");
 			_sctipt.AppendLine("\tAuto Generated By SampleECS,Don't Modify It Manually!");
 			_sctipt.AppendLine("*/");
 			_sctipt.AppendLine("namespace SampleECS");
 			_sctipt.AppendLine("{");
-			_sctipt.AppendLine("\tpublic partial class ECS_Entity");
+			_sctipt.AppendLine($"\tpublic partial class ECS_{context_name}_Entity : ECS_Entity");
 			_sctipt.AppendLine("\t{");
-
-			_sctipt.AppendLine("\t\tconst int INVAILD_IDX = -1;");
+			if (wrap_idx == 1)
+			{//首个分片文件
+				_sctipt.AppendLine($"\t\tECS_{context_name}_Context context;");
+				_sctipt.AppendLine("\t\tpublic override void Reset(uint uid, int contextIdx) {");
+				_sctipt.AppendLine("\t\t\tbase.Reset(uid, contextIdx);");
+				_sctipt.AppendLine($"\t\t\tcontext = ECS_Context.GetContext(contextIdx) as ECS_{context_name}_Context;");
+				_sctipt.AppendLine("\t\t}");
+				_sctipt.AppendLine("\t\tconst int INVAILD_IDX = -1;");
+			}
 			_sctipt.AppendLine("");
 
+			int counter = 1;
 			//反射收集全部Component类型
 			foreach (var type in asm_all_types)
 			{
@@ -196,10 +274,10 @@ namespace SampleECS
 				ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
 				if (ca != null)
 				{
-					_sctipt.AppendLine("\t\t/************ Begin Component Code : " + type + " ************/");
+					_sctipt.AppendLine(string.Format("\t\t/************ <{0}>Begin Component Code : " + type + " ************/", counter));
 					string com_field = type.ToString().ToLower();
 					string pool = "context.pool_" + type;
-					string pid = "poolIndecies[ECS_Component_Type." + type + "]";
+					string pid = $"poolIndecies[{context_name}_Component_Type." + type + "]";
 
 					//Component引用
 					_sctipt.AppendLine("\t\tpublic " + type + " " + com_field +
@@ -216,8 +294,9 @@ namespace SampleECS
 					_sctipt.AppendLine("\t\t\tif(" + pid + "-1 == INVAILD_IDX) {" + pid + " = " + pool + ".NewComponent(com) +1; " +
 						"context.OnEntityChange(this); }");
 					_sctipt.AppendLine("\t\t\tif (!entityDirty) { entityDirty = true; context.excute_ptr++; context.excuteEntities[context.excute_ptr] = _in_context_idx; }");
-					_sctipt.AppendLine("\t\t\tif (context.ExcutingSystem) { com_dirtyMarkBack_Ptr++; com_dirtyMarkBack[com_dirtyMarkBack_Ptr] = ECS_Component_Type." + type + "; }");
-					_sctipt.AppendLine("\t\t\telse { com_dirtyMarkFront_Ptr++; com_dirtyMarkFront[com_dirtyMarkFront_Ptr] = ECS_Component_Type." + type + "; }");
+					_sctipt.AppendLine("\t\t\tif (context.ExcutingSystem) { com_dirtyMarkBack_Ptr++; com_dirtyMarkBack[com_dirtyMarkBack_Ptr] = "
+						+ $"{context_name}_Component_Type." + type + "; }");
+					_sctipt.AppendLine("\t\t\telse { com_dirtyMarkFront_Ptr++; com_dirtyMarkFront[com_dirtyMarkFront_Ptr] = "+$"{context_name}_Component_Type." + type + "; }");
 					_sctipt.AppendLine("\t\t}");
 
 					//Remove Component
@@ -226,22 +305,68 @@ namespace SampleECS
 					_sctipt.AppendLine("\t\t\t" + pool + ".Recycle(" + pid + "); " + pid + " = 0; context.OnEntityChange(this);");
 					_sctipt.AppendLine("\t\t}");
 
-                    //Replace Component
-                    _sctipt.AppendLine(string.Format("\t\tpublic void Replace_{0}({1} com)", type, type));
+					//Replace Component
+					_sctipt.AppendLine(string.Format("\t\tpublic void Replace_{0}({1} com)", type, type));
 					_sctipt.AppendLine("\t\t{");
 					_sctipt.AppendLine("\t\t\tif (!entityDirty) { entityDirty = true; context.excute_ptr++; context.excuteEntities[context.excute_ptr] = _in_context_idx; }");
 					_sctipt.AppendLine("\t\t\t" + com_field + " = com;");
-					_sctipt.AppendLine("\t\t\tif (context.ExcutingSystem) { com_dirtyMarkBack_Ptr++; com_dirtyMarkBack[com_dirtyMarkBack_Ptr] = ECS_Component_Type." + type + "; }");
-					_sctipt.AppendLine("\t\t\telse { com_dirtyMarkFront_Ptr++; com_dirtyMarkFront[com_dirtyMarkFront_Ptr] = ECS_Component_Type." + type + "; }");
+					_sctipt.AppendLine("\t\t\tif (context.ExcutingSystem) { com_dirtyMarkBack_Ptr++; com_dirtyMarkBack[com_dirtyMarkBack_Ptr] = "
+						+ $"{context_name}_Component_Type." + type + "; }");
+					_sctipt.AppendLine("\t\t\telse { com_dirtyMarkFront_Ptr++; com_dirtyMarkFront[com_dirtyMarkFront_Ptr] = " + $"{context_name}_Component_Type." + type + "; }");
 
 					_sctipt.AppendLine("\t\t}");
-					_sctipt.AppendLine("\t\t/************ End Component Code : " + type + " ************/");
+					_sctipt.AppendLine(string.Format("\t\t/************ <{0}>End Component Code : " + type + " ************/", counter));
 					_sctipt.AppendLine("");
+					counter++;
 				}
 			}
 			_sctipt.AppendLine("\t}");
 			_sctipt.AppendLine("}");
 
+			using (var e_file = File.CreateText(file_path))
+			{
+				e_file.Write(_sctipt.ToString());
+				e_file.Flush();
+			}
+		}
+
+		//生成System代码包
+		static void Gen_System_Wrap(string file_path, string context_name)
+		{
+			StringBuilder _sctipt = new StringBuilder();
+			_sctipt.AppendLine("/*");
+			_sctipt.AppendLine("\tAuto Generated By SampleECS,Don't Modify It Manually!");
+			_sctipt.AppendLine("*/");
+			_sctipt.AppendLine("namespace SampleECS");
+			_sctipt.AppendLine("{");
+			_sctipt.AppendLine($"\tpublic class ECS_{context_name}_System : ECS_System");
+			_sctipt.AppendLine("\t{");
+
+			_sctipt.AppendLine("\t\tprotected ECS_Game_Context context { get { return __context as ECS_Game_Context; } }");
+			_sctipt.AppendLine("");
+
+			_sctipt.AppendLine("\t\tpublic override bool __GetSystemMatch(ECS_Entity entity) {");
+			_sctipt.AppendLine($"\t\t\treturn GetSystemMatch(entity as ECS_{context_name}_Entity);");
+			_sctipt.AppendLine("\t\t}");
+			_sctipt.AppendLine($"\t\tpublic virtual bool GetSystemMatch(ECS_{context_name}_Entity entity)" + " { return true; }");
+			_sctipt.AppendLine("");
+
+			_sctipt.AppendLine("\t\tprotected override void __OnSystemInited(ECS_Context context) {");
+			_sctipt.AppendLine("\t\t\tbase.__OnSystemInited(context);");
+			_sctipt.AppendLine($"\t\t\tOnSystemInited(context as ECS_{context_name}_Context);");
+			_sctipt.AppendLine("\t\t}");
+			_sctipt.AppendLine($"\t\tprotected virtual void OnSystemInited(ECS_{context_name}_Context context) " + "{ }");
+			_sctipt.AppendLine("");
+
+			_sctipt.AppendLine("\t\tpublic override void __Excute(ECS_Entity entity) {");
+			_sctipt.AppendLine("\t\t\tbase.__Excute(entity);");
+			_sctipt.AppendLine($"\t\t\tExcute(entity as ECS_{context_name}_Entity);");
+			_sctipt.AppendLine("\t\t}");
+			_sctipt.AppendLine($"\t\tpublic virtual void Excute(ECS_{context_name}_Entity entity)" + " { }");
+			_sctipt.AppendLine("");
+
+			_sctipt.AppendLine("\t}");
+			_sctipt.AppendLine("}");
 			using (var e_file = File.CreateText(file_path))
 			{
 				e_file.Write(_sctipt.ToString());

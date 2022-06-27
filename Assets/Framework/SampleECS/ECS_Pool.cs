@@ -55,6 +55,25 @@ namespace SampleECS
             return ref data_pool[idx];
         }
 
+        public ref T Apply<W>(out int idx)
+            where W : T, new()
+        {
+            if (disposedCache.Count > 0)
+            {
+                var av_idx = disposedCache.Pop();
+                idx = av_idx;
+                data_pool[idx].disposed = false;
+                //Debug.Log("Reapply " + typeof(T).ToString());
+                return ref data_pool[idx];
+            }
+
+            W data = new W();
+            data_ptr++;
+            ECS_Utils.SetArrayElement(ref data_pool, data_ptr, data);
+            idx = data_ptr;
+            return ref data_pool[idx];
+        }
+
         public bool TryGetData(int idx, out T data)
         {
             if (ContainIndex(idx))

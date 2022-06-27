@@ -32,7 +32,7 @@ namespace SampleECS
     /// 组件对象池
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ECS_Component_Pool<T> : ECS_RecyclePool<ECS_Component_Data<T>>,IECS_Component_Pool
+    public class ECS_Component_Pool<T> : ECS_RecyclePool<ECS_Component_Data<T>>, IECS_Component_Pool
         where T : struct
     {
         static ECS_Component_Pool<T>[] context_pools = new ECS_Component_Pool<T>[0];
@@ -99,28 +99,5 @@ namespace SampleECS
         }
 
         #endregion
-    }
-
-    public static partial class ECS_Component_Type
-    {
-        public static int COMPONENT_TYPE_COUNT { get; private set; } = 0;
-        internal static void SetTypeCount(int count) { COMPONENT_TYPE_COUNT = count; }
-    }
-
-    public static partial class ECS_Component_Wrap
-    {
-        static Dictionary<string, int> COM_TYPE_ID_MAP = new Dictionary<string, int>();
-        public static int Type2ID(Type type)
-        {
-            var str = type.ToString();
-            return Type2ID(str);
-        }
-        public static int Type2ID(string type)
-        {
-            if (COM_TYPE_ID_MAP.ContainsKey(type))
-                return COM_TYPE_ID_MAP[type];
-
-            return -1;
-        }
     }
 }
