@@ -22,7 +22,6 @@ namespace SampleECS
 		protected virtual void OnSystemInited(ECS_Game_Context context) { }
 
 		public override void __Excute(ECS_Entity entity) {
-			base.__Excute(entity);
 			Excute(entity as ECS_Game_Entity);
 		}
 		public virtual void Excute(ECS_Game_Entity entity) { }
@@ -36,7 +35,6 @@ namespace SampleECS
 	{
 		public override void __ExcuteStatic(ECS_Context context)
 		{
-			base.__ExcuteStatic(context);
 			ExcuteStatic(context as ECS_Game_Context);
 		}
 		public virtual void ExcuteStatic(ECS_Game_Context context) { }

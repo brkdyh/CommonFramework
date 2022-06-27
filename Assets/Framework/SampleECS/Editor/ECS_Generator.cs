@@ -393,7 +393,7 @@ namespace SampleECS
 			_sctipt.AppendLine("");
 
 			_sctipt.AppendLine("\t\tpublic override void __Excute(ECS_Entity entity) {");
-			_sctipt.AppendLine("\t\t\tbase.__Excute(entity);");
+			//_sctipt.AppendLine("\t\t\tbase.__Excute(entity);");
 			_sctipt.AppendLine($"\t\t\tExcute(entity as ECS_{context_name}_Entity);");
 			_sctipt.AppendLine("\t\t}");
 			_sctipt.AppendLine($"\t\tpublic virtual void Excute(ECS_{context_name}_Entity entity)" + " { }");
@@ -409,7 +409,7 @@ namespace SampleECS
 			_sctipt.AppendLine("\t{");
 			_sctipt.AppendLine("\t\tpublic override void __ExcuteStatic(ECS_Context context)");
 			_sctipt.AppendLine("\t\t{");
-			_sctipt.AppendLine("\t\t\tbase.__ExcuteStatic(context);");
+			//_sctipt.AppendLine("\t\t\tbase.__ExcuteStatic(context);");
 			_sctipt.AppendLine($"\t\t\tExcuteStatic(context as ECS_{context_name}_Context);");
 			_sctipt.AppendLine("\t\t}");
 			_sctipt.AppendLine($"\t\tpublic virtual void ExcuteStatic(ECS_{context_name}_Context context) " + "{ }");
