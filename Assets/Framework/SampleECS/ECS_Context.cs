@@ -21,7 +21,7 @@ namespace SampleECS
             type_ids = types;
         }
 
-        public static ECS_Trigger operator &(ECS_Trigger m1, ECS_Trigger m2)
+        public static ECS_Trigger operator |(ECS_Trigger m1, ECS_Trigger m2)
         {
             int[] nm = new int[m1.type_ids.Length + m2.type_ids.Length];
             Array.Copy(m1.type_ids, 0, nm, 0, m1.type_ids.Length);
@@ -240,17 +240,6 @@ namespace SampleECS
 
             //Get All Types by Refloection
             var asm_all_types = Assembly.GetAssembly(typeof(ECS_Context)).GetTypes();
-
-            //添加静态 Component
-            foreach (var type in asm_all_types)
-            {
-                ComponentAttribute ca = type.GetCustomAttribute<ComponentAttribute>();
-                if (ca != null && ca.isStatic)
-                {
-                    var s_com = Activator.CreateInstance(type);
-                }
-            }
-
             //收集 System
             foreach (var type in asm_all_types)
             {
@@ -295,6 +284,10 @@ namespace SampleECS
             RecyleAll();
         }
 
+        /// <summary>
+        /// Clean Context and All Context-Data Will be Recycled。
+        /// </summary>
+        /// <param name="context_name"></param>
         public static void CleanContext(string context_name)
         {
             var context = GetContext(context_name);
@@ -336,6 +329,10 @@ namespace SampleECS
             Clean();
         }
 
+        /// <summary>
+        /// Dispose Context,All Resoureces Releated to Context Will be Released!
+        /// </summary>
+        /// <param name="context_name"></param>
         public static void DisposeContext(string context_name)
         {
             var context = GetContext(context_name);
@@ -404,6 +401,8 @@ namespace SampleECS
             foreach (var sys_kp in systems_container)
             {
                 var sys = sys_kp.Value;
+                if (sys is ECS_Static_System)
+                    continue;
                 var collection = getSystemCollection(sys);
                 if (sys.__GetSystemMatch(entity))
                     collection.AddEntity(entity);
@@ -418,6 +417,8 @@ namespace SampleECS
             foreach (var sys_kp in systems_container)
             {
                 var sys = sys_kp.Value;
+                if (sys is ECS_Static_System)
+                    continue;
                 var collection = getSystemCollection(sys);
                 if (collection.ContainEntity(entity))
                     collection.RemoveEntity(entity);
@@ -536,13 +537,14 @@ namespace SampleECS
         {
             try
             {
+                bool is_system_static = system is ECS_Static_System;
 
                 var type = system.GetType();
                 ECS_Entity_Collections collection = null;
-                if (!system_collections.TryGetValue(type, out collection))
+                if (!is_system_static
+                    && !system_collections.TryGetValue(type, out collection))
                     return;
-                var entities = collection.entities;
-                bool is_system_static = system is ECS_Static_System;
+                var entities = is_system_static ? null : collection.entities;
                 if (system.getSystemMode == SystemMode.Loop)
                 {
                     system.BeforeExcute();              //调用 BeforeExcute
@@ -600,26 +602,22 @@ namespace SampleECS
                             if (e_dirty_ptr >= 0)
                             {
                                 //whether entity fit every condition of System-Trigger
-                                dirty = true;
+                                dirty = false;
                                 var dm = entity.com_dirtyMarkFront;
                                 for (int j = 0, l1 = trigger_types.Length; j < l1; j++)
                                 {
                                     int cur_type = trigger_types[j];
-                                    bool contain_type = false;
                                     for (int k = 0, l2 = e_dirty_ptr + 1; k < l2; k++)
                                     {
                                         if (dm[k] == cur_type)
                                         {
-                                            contain_type = true;
+                                            dirty = true;
                                             break;
                                         }
                                     }
 
-                                    if (!contain_type)
-                                    {
-                                        dirty = false;
+                                    if (dirty)
                                         break;
-                                    }
                                 }
                             }
 
